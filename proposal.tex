@@ -68,17 +68,17 @@ It made the news again! On April 14th, 2023, one of the days that this
 proposal was written, the world news reported that ``\textit{Rheinmetall
   AG, a German automotive and arms manufacturer, has suffered a
   cyberattack.}'' Due to the nature of the company, which among other products
-manifactures the Leopard 2 tanks, not many details were disclosed. In
-some sense, we would be OK if cyberattacks were confined to weapons and arms
-companies. Unfortunately, they affect many other parts of our society. In the
-summer of 2021, one of the major supermarket chains in Sweden was forced to an
-urgent, nationwide lockdown of its stores after being attacked by the (then
-largest) ransomware attack of all time. Even worse, in Sept~2020, for the
-first time ever, a patient’s death has been linked to a cyberattack after
-ransomware disrupted emergency care at Düsseldorf University Hospital in
+manufactures the Leopard 2 tanks, not many details were disclosed. In
+some sense, we would be OK if cyberattacks that made the news were confined to
+weapons and arms companies. Unfortunately, they affect many other parts of our
+society. In summer 2021, one of the major supermarket chains in Sweden was
+forced to an urgent, nationwide lockdown of its stores after being attacked by
+the (then largest) ransomware attack of all time. Even worse, in Sept~2020,
+for the first time ever, a patient’s death has been linked to a cyberattack
+after ransomware disrupted emergency care at Düsseldorf University Hospital in
 Germany.
 %
-The recent past and the current predictions do not paint a happy picture.
+The recent past and the current predictions paint a rather bleak picture.
 According to Security Magazine (Dec 2022), ``\textit{there are over $2\,200$
 attacks each day which breaks down to nearly one cyberattack every $39$ seconds.}''
 %
@@ -87,10 +87,10 @@ According to a report by Cybersecurity Ventures, ``\textit{the total cost of
   In 2022, there were a record number of data breaches, with the
   global \emph{average} cost reaching \$4.35 million.}''
 %
-But there also exist some reasons to be optimistic: although the number of
-known 0-day exploits is breaking the record year after year, this increase is
-also partly due to us now possessing better techniques to detect (and defend
-against) such attacks~\cite{ONeil@MIT-TR-21}.
+The only good news is that there also exist some reasons to be optimistic:
+although the number of known 0-day exploits is breaking the record year after
+year, this increase is also partly due to us now possessing better techniques
+to detect (and defend against) such attacks~\cite{ONeil@MIT-TR-21}.
 
 Although cyberattacks have many culprits, many of them are enabled by bugs and
 security vulnerabilities in implementations of network protocols, often due to
@@ -100,7 +100,7 @@ risks. A major complication is that network protocols that establish secure
 connections (\eg SSH, TLS, DTLS, QUIC, etc.) are \emph{complex} and
 \emph{stateful}. Their implementations must carefully manage the type and
 order of exchanged messages and cryptographic material, by maintaining a
-(often complicated) state machine which keeps track of how far the protocol
+(quite complicated) state machine which keeps track of how far the protocol
 interaction has progressed. Any deviation from the order prescribed in the
 protocol's specification may constitute anything between an inconsequential
 error to a serious vulnerability. Corresponding implementation flaws, called
@@ -109,136 +109,59 @@ authentication steps or establish insecure
 connections~\cite{MessyTLS@CACM-17,ruiter2015,somorovsky2016,DTLS@USENIX-20}.
 Other kinds of vulnerabilities in protocol implementations are caused by
 software errors such as buffer overflows, out-of-bounds reads, rounding
-errors, etc. Unfortunately, the stateful nature of protocol implementations
-makes it very challenging to apply commonly employed software testing
-techniques such as \emph{coverage-driven fuzzing}.
+errors, undefined behaviour, etc. Unfortunately, the stateful nature of
+protocol implementations makes it very challenging to apply commonly employed
+software testing techniques such as \emph{coverage-driven fuzzing}.
 
 The \textbf{purpose} of this proposal is to extend the power of techniques for
-security testing of network protocol implementations, show their potential on
-implementations of protocols which are widely used to secure the Internet and
-IoT systems, and make these implementations more robust and more secure in the
-process.
+security testing of network protocol implementations, demonstrate their
+potential on implementations of protocols which are widely used to secure the
+Internet and IoT systems, and make these implementations more robust and more
+secure in the process.
 %
 Our \textbf{main aim} with this project is to develop protocol testing
 techniques and tools that are \emph{fully automated}, \emph{scalable}, and
-\emph{similarly effective} as their black-box and grey-box counterparts which
-are currently used to find security vulnerabilities and bugs in stateless
+\emph{similarly effective} as their black-box and grey-box counterparts,
+which are currently used to find security vulnerabilities and bugs in stateless
 programs.
 
 To achieve the above, we intend to build upon recent techniques, a tool, and
 experiences of our group (cf.\ \cref{sec:prelim}), and extend all these along
 the following three dimensions, which we briefly present below:
 \begin{description}
-\item[Algorithmic Improvements to Model Learning.]
-\item[Effective Fuzzing Techniques.]
-\item[Tools, Case Studies, and Methodologies.]
+\item[Algorithmic Improvements to Model Learning.] The core ingredient for all
+  security testing techniques we intend to develop or extend is to discover,
+  in a fully automated way, as much information about the state machine of
+  protocol implementations as possible. The technique we will employ for this
+  is \emph{model learning}~\cite{Angluin1987,Vaandrager@CACM-17} (also known
+  as \emph{active automata learning}), and the challenge is to develop
+  \emph{scalable} algorithms that learn models which are quite rich in
+  information (\eg models whose symbols also contain parameters or capture
+  data flow). Currently, no such algorithms exist; coming up with such model
+  learning algorithms is not only interesting for security, but is also
+  applicable to other areas.
+\item[Effective Fuzzing Techniques.] We will employ the richer learned models
+  to extend the power of \emph{protocol state fuzzing} and \emph{stateful
+  coverage-driven fuzzing} techniques, thereby allowing them to automatically
+  detect more vulnerabilities and ``deeper'' errors. Note that these two
+  techniques, which we will describe in more detail in the following sections,
+  are techniques which are different and complementary to each other. The
+  former aims to detect protocol state machine bugs (\ie logical errors that
+  result in vulnerabilities, interoperability issues, and specification
+  non-conformance), while the latter typically detects software errors
+  (illegal memory accesses, rounding errors, etc.).
+\item[Tools, Case Studies, and Methodologies.] We will implement our fuzzing
+  techniques in suitable software tools, applying them to implementations of
+  existing and new network protocols, which we will use as case studies. One
+  purpose for such case studies is to evaluate the effectiveness of our
+  techniques and robustify the implementations we will target. Another is to
+  help us develop methodologies for the most effective use of these techniques
+  by protocol implementors, which we might engage in user studies.
 \end{description}
 
-\FIX{KS: Will continue here...}
 
-\mycomment{
-This undertaking involves designing and implementing techniques for
-handling all three sources of non-determinism in concurrent software:
-\emph{data}, \emph{scheduling}, and \emph{memory model non-determinism}.
-%
-To handle data dependencies, it requires adaptation and further
-development of techniques from symbolic and concolic execution that
-have made testing of sequential programs practical and effective.
-%
-To combat the combinatorial explosion due to scheduling
-non-determinism, it involves extending the power of partial order and
-symmetry reduction algorithms, and tailoring them to be able to handle
-effectively concurrency constructs used in real programs (\eg using
-synchronization constructs other than ``standard'' locks, dynamic
-process creation, message passing, etc.).
-%
-Finally, to be able to reason about concurrency errors due to effects
-of the memory model of the underlying platform and not suffer from a
-severe increase in the number of additional thread interleavings that
-need to be examined, it requires developing formal models that
-\emph{precisely} reflect the behaviours of programs running on modern
-architectures, effective ways of capturing the additional memory model
-dependencies, and ways to map them back to constructs that the partial
-order reduction algorithms can handle.
-%
-Of course, all these need to be implemented in appropriate tools---or
-at least usable prototypes---so that their effectiveness on programs
-of significant size can be evaluated.
-
-Our aim is to build upon our recent experiences with concolic
-execution of programs~\cite{CutEr@PPDP-15} and on the solid theoretical
-foundation for stateless model checking that we have developed
-(namely, two very powerful algorithms for dynamic partial order
-reduction~\cite{DPOR@POPL-14} and the effective application of one
-algorithm to the TSO and PSO memory
-models~\cite{Nidhugg@TACAS-15}; see \cref{sec:description}),
-extend the power of techniques for systematic testing of concurrent
-programs, and strike a proper balance between theoretical and
-practical work in the following directions:
-\begin{description}
-\item[Algorithmic Improvements to Techniques for Stateless Model Checking.]
-  Starting from an optimal algorithm for dynamic partial order
-  reduction~\cite{DPOR@POPL-14}, we plan to:%
-  \begin{inparaenum}[(i)]
-    \item extend it so that it also effectively supports
-      synchronization constructs of modern programming languages
-      (\eg atomics and synchronization without locks, await
-      statements, etc.);
-    \item investigate whether it is possible to combine
-      that algorithm with bounding techniques in a manner that does
-      not affect its soundness and optimality;
-     \item extend it to perform targeted exploration
-      of process interleavings using techniques from concolic
-      execution.
-  \end{inparaenum}
-  For programs with non-acyclic state spaces we will investigate the
-  combination of our DPOR algorithms with \emph{unfolding}
-  techniques~\cite{KSH:ase15,UnfoldingPOR@CONCUR-15} and how to
-  obtain higher coverage of the space of executions by combining
-  testing with SAT-solver guided symbolic execution. Finally, we will
-  characterize pros and cons of these techniques, both algorithmically
-  and experimentally, in order to provide general recommendations for their
-  use.
-\item[Formal Models and Connections with Modern Programming Languages.]
-  We will develop:%
-  \begin{inparaenum}[(i)]
-    \item A foundation for concolic testing of languages with
-      higher-order constructs, something which currently does not
-      exist and is required for applying concolic testing to programs
-      written in concurrent languages supporting pattern-matching and
-      higher-orderness, such as Erlang or Scala.
-    \item A model checker that verifies the behaviour of programs that
-      run on modern multicore architectures and precisely capture the
-      additional dependencies due to the synchronization primitives of
-      the language or of the platform. Such behaviours may deviate
-      substantially from those under sequential consistency, making
-      existing definitions of program semantics inadequate. We will
-      therefore define new criteria for program correctness that
-      capture accurately the sources of concurrency errors due to
-      relaxed memory. Here, we will target C11 and C++11 programs, and
-      we expect that this work will also assist the development of
-      language standards per se.
-  \end{inparaenum}
-\item[Tools and Case Studies.] We will develop scalable systematic testing
-  tools that can directly handle large concurrent software written in C and
-  C++, such as the Linux kernel, and programs written in actor languages
-  such as Erlang, and we will demonstrate their scalability on non-trivial
-  case studies. In addition, we will extend and strengthen the tools and
-  prototypes that the PI's group has built in the recent past, and
-  investigate their uses and applicability in new application areas. Two of
-  the areas we already have in mind are testing and verification of
-  protocols for sensor networks
-  and for scalable distributed programming.
-\end{description}
-
-For tool development, we will, at least initially, base our work on
-two existing testing tools for Erlang (\system{Concuerror} and
-\system{CutEr}) and a tool for C/C++ with pthreads (\system{Nidhugg}),
-which are presented below.
-}
-
-\section{State of the Art}
-%=================================================================
+\section{State of the Art} \label{sec:SOTA}
+%==========================================
 Testing is and will continue to be a dominant technique for checking
 correctness properties of programs and protocol implementations.  At a very
 coarse level, testing techniques can be classified as \emph{black-box} ones,
@@ -249,8 +172,8 @@ of \emph{fuzz testing}, the term \emph{grey-box} is often used to denote a
 variant of white-box testing that can obtain only partial information from the
 code of the SUT, \eg the code coverage that has been achieved.
 %
-This proposal is concerned with black-box and grey-box protocol testing
-techniques, so below we focus mainly on them.
+This proposal is mainly concerned with black-box and grey-box protocol testing
+techniques, so below we focus on them.
 
 %\paragraph{Protocol Testing}
 Many network protocols and their implementations have been thoroughly analyzed
@@ -342,9 +265,9 @@ fuzzing is to detect bugs, especially security vulnerabilities, through
 testing with unexpected inputs. Black-box fuzzing dates back to 1990 when
 Miller \etal~\cite{Fuzz@CACM-90} used it to find crashes in UNIX utilities. In
 recent years, due to its ease of use and effectiveness, fuzzing has become a
-popular and widely-used testing technique, and coverage-driven grey-box
-fuzzers such as \system{AFL}~\cite{AFL} and its derivatives or the OSS-Fuzz
-service by Google~\cite{OSS-Fuzz@USENIX-17} have found thousands of bugs in
+popular and widely-used testing technique. Coverage-driven grey-box fuzzers
+such as \system{AFL}~\cite{AFL} and its derivatives or the OSS-Fuzz service by
+Google~\cite{OSS-Fuzz@USENIX-17} have by now found thousands of bugs in
 real-world software. Recent surveys on fuzzing
 (\eg~\cite{FuzzingSurvey@TSE-21,FuzzingRoadmap@CompSurveys-22}) and
 \href{https://wcventure.github.io/FuzzingPaper/}{this webpage} show that
@@ -368,8 +291,8 @@ employing \emph{heuristics} (namely, taking snapshots of long-lived memory
 areas and applying fuzzy hashing) to recover state information.
 %
 For achieving success which is similar to the one that coverage-driven fuzzers
-for stateless programs have managed to achieve, we believe that more
-sophisticated techniques need to be developed.
+for stateless programs often achieve, we believe that more sophisticated
+stateful fuzzing techniques need to be developed.
 
 
 \section{Significance and Scientific Novelty} \label{sec:significance}
@@ -505,60 +428,17 @@ In a parallel line of work, we have been using and evaluating many of the
 mutation-based and hybrid fuzzing techniques published in the recent
 literature, and applying their associated fuzzers, over a period of more than
 three years, on the code base of the Contiki-NG Operating System for IoT
-devices. In the process, besides gaining ificant experience and expertise in
-the area, we have been able to detect and correct a significant number of bugs
-and security vulnerabilies (which have resulted in a total of eleven CVEs), in
-its code base. We have reported our experiences, as well as proposed a
-methodology to evaluate different grey-box fuzzing techniques, in a
+devices. In the process, besides gaining significant experience and expertise
+in the area, we have been able to detect and correct a significant number of
+bugs and security vulnerabilies (which have resulted in a total of eleven
+CVEs), in Contiki-NG's code base. We have reported our experiences, as well as
+proposed a methodology to evaluate different grey-box fuzzing techniques, in a
 paper~\cite{SoManyFuzzers@ASE-22} that appeared in the 2022 ACM/IEEE
 Conference on Automated Software Engineering (ASE), and have publicly released
 a \href{https://github.com/assist-project/so-many-fuzzers-artifact}{new
   benchmark suite} for fuzzer evaluation.
 %
-However, we point out that all the fuzzers we used in this work are \emph{not}
-stateful.
-
-
-\mycomment{
-Very recently, we have used \system{Nidhugg} to test one particular
-subsystem of the Linux kernel with a non-trivial implementation, namely its
-Read-Copy-Update (RCU) mechanism.  RCU~\cite{McKenney@Queue-13} is a
-synchronization mechanism used heavily in key components of the Linux
-kernel, such as the virtual filesystem (VFS), to achieve scalability by
-exploiting RCU's ability to allow concurrent reads and updates.  RCU's
-design is quite involved and requires significant effort to fully
-understand it, let alone become convinced that its implementation is
-faithful to its specification and provides its claimed properties. Our
-modeling allowed us to reproduce, often within seconds, safety and liveness
-bugs that have been reported for RCU in recent years.  More importantly,
-using \system{Nidhugg} we were able to \emph{verify the Grace-Period
-  guarantee} of Hierarchical RCU (Tree RCU), the basic guarantee that RCU
-offers, which is crucial for its correctness, on five different Linux
-kernel versions (v3.0, v3.19, v4.3, v4.7, and v4.9.6, all in
-\emph{non-preemptible} builds).  Our approach was shown to be effective,
-both in dealing with the increased complexity of recent kernels and in
-terms of time that the process requires. Based on
-these results, presented in a paper which is currently under submission, we
-have good reasons to believe that our effort constitutes a big step towards
-making tools such as \system{Nidhugg} part of the standard testing
-infrastructure of the Linux kernel.  In fact, we are already working
-towards this.
-
-Still, there is quite a lot of work to be done.  Although we have verified
-that the actual code of Tree RCU satisfies its main correctness criterion,
-we are not yet at a point where we can claim with certainty that the
-complete implementation of Tree RCU is bug-free; there may be bugs in
-components of Tree RCU that are not included in our modeling and our
-tests. In addition, there are are many other requirements that RCU must
-meet. Thus, our work could be extended to include more aspects of RCU, and
-also test them under different memory models, not only under SC (Sequential
-Consistency) and x86 TSO (Total Store Order) as we have so far
-done. However, this requires significantly more powerful techniques than
-those that \system{Nidhugg} currently implements.  Equally challenging, if
-not impossible, with the current techniques implemented in \system{Nidhugg}
-is to handle the non-determinism that \emph{preemptible} Linux kernel
-builds require for their verification.
-}
+We point out that all the fuzzers we used in that work are \emph{not} stateful.
 
 
 \section{Project Description} \label{sec:description}
