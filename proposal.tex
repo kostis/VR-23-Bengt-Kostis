@@ -62,21 +62,21 @@
 
 \vspace*{-1.75em}
 
-\section{Purpose and Aims}
-%=========================
+\section{Purpose and Aims} \label{sec:aims}
+%==========================================
 It made the news again! On April 14th, 2023, one of the days that this
 proposal was written, the world news reported that ``\textit{Rheinmetall
   AG, a German automotive and arms manufacturer, has suffered a
   cyberattack.}'' Due to the nature of the company, which among other products
 manufactures the Leopard 2 tanks, not many details were disclosed. In
 some sense, we would be OK if cyberattacks that made the news were confined to
-weapons and arms companies. Unfortunately, they affect many other parts of our
-society. In summer 2021, one of the major supermarket chains in Sweden was
-forced to an urgent, nationwide lockdown of its stores after being attacked by
-the (then largest) ransomware attack of all time. Even worse, in Sept~2020,
-for the first time ever, a patient’s death has been linked to a cyberattack
-after ransomware disrupted emergency care at Düsseldorf University Hospital in
-Germany.
+weapons and arms companies. Unfortunately, they also affect many other parts
+of our society. For example, in summer~2021, one of the major supermarket
+chains in Sweden was forced to an urgent, nationwide lockdown of its stores
+after being attacked by the (then largest) ransomware attack of all time. Even
+worse, in Sept~2020, for the first time ever, a patient’s death has been
+linked to a cyberattack after ransomware disrupted emergency care at
+Düsseldorf University Hospital in Germany.
 %
 The recent past and the current predictions paint a rather bleak picture.
 According to Security Magazine (Dec 2022), ``\textit{there are over $2\,200$
@@ -89,8 +89,9 @@ According to a report by Cybersecurity Ventures, ``\textit{the total cost of
 %
 The only good news is that there also exist some reasons to be optimistic:
 although the number of known 0-day exploits is breaking the record year after
-year, this increase is also partly due to us now possessing better techniques
-to detect (and defend against) such attacks~\cite{ONeil@MIT-TR-21}.
+year, this increase is also partly due to us now possessing better knowledge
+about them and techniques to detect (and defend against) such
+attacks~\cite{ONeil@MIT-TR-21}.
 
 Although cyberattacks have many culprits, many of them are enabled by bugs and
 security vulnerabilities in implementations of network protocols, often due to
@@ -127,36 +128,36 @@ programs.
 
 To achieve the above, we intend to build upon recent techniques, a tool, and
 experiences of our group (cf.\ \cref{sec:prelim}), and extend all these along
-the following three dimensions, which we briefly present below:
+the following three dimensions, which we briefly overview below:
 \begin{description}
-\item[Algorithmic Improvements to Model Learning.] The core ingredient for all
+\item[Algorithmic Improvements to Model Learning] A core ingredient for all
   security testing techniques we intend to develop or extend is to discover,
-  in a fully automated way, as much information about the state machine of
+  in a fully automated way, as much information about the state machines of
   protocol implementations as possible. The technique we will employ for this
-  is \emph{model learning}~\cite{Angluin1987,Vaandrager@CACM-17} (also known
-  as \emph{active automata learning}), and the challenge is to develop
-  \emph{scalable} algorithms that learn models which are quite rich in
-  information (\eg models whose symbols also contain parameters or capture
-  data flow). Currently, no such algorithms exist; coming up with such model
-  learning algorithms is not only interesting for security, but is also
-  applicable to other areas.
-\item[Effective Fuzzing Techniques.] We will employ the richer learned models
-  to extend the power of \emph{protocol state fuzzing} and \emph{stateful
-  coverage-driven fuzzing} techniques, thereby allowing them to automatically
-  detect more vulnerabilities and ``deeper'' errors. Note that these two
-  techniques, which we will describe in more detail in the following sections,
-  are techniques which are different and complementary to each other. The
-  former aims to detect protocol state machine bugs (\ie logical errors that
-  result in vulnerabilities, interoperability issues, and specification
-  non-conformance), while the latter typically detects software errors
-  (illegal memory accesses, rounding errors, etc.).
-\item[Tools, Case Studies, and Methodologies.] We will implement our fuzzing
+  is \emph{model learning}~\cite{Angluin1987,Vaandrager@CACM-17}, and the
+  challenge is to develop \emph{scalable} algorithms that learn models which
+  are quite rich in information (\eg models whose symbols also contain
+  parameters or capture data flow). Currently, no such algorithms exist;
+  coming up with such model learning algorithms is not only interesting for
+  security, but is also applicable to many other areas.
+\item[Effective Stateful Fuzzing Techniques] We will employ the richer
+  learned models for extending the power of \emph{protocol state fuzzing} and
+  \emph{stateful coverage-driven fuzzing} techniques, thereby allowing them to
+  automatically detect more vulnerabilities and ``deeper'' errors. Note that
+  these two techniques, which we will describe in more detail in the following
+  sections, are techniques which are different and complementary to each
+  other. The former aims to detect protocol state machine bugs (\ie logical
+  errors that result in vulnerabilities, interoperability issues, and
+  specification non-conformance), while the latter typically detects software
+  errors (illegal memory accesses, rounding errors, etc.).
+\item[Tools, Case Studies, and Methodologies] We will implement our fuzzing
   techniques in suitable software tools, applying them to implementations of
   existing and new network protocols, which we will use as case studies. One
-  purpose for such case studies is to evaluate the effectiveness of our
-  techniques and robustify the implementations we will target. Another is to
-  help us develop methodologies for the most effective use of these techniques
-  by protocol implementors, which we might engage in user studies.
+  purpose for running such case studies is to evaluate the effectiveness of
+  our techniques and robustify the implementations we will target. Another is
+  to help us develop methodologies for the most effective uses of these
+  techniques by protocol implementors, which we might also engage in user
+  studies.
 \end{description}
 
 
@@ -164,7 +165,7 @@ the following three dimensions, which we briefly present below:
 %==========================================
 Testing is and will continue to be a dominant technique for checking
 correctness properties of programs and protocol implementations.  At a very
-coarse level, testing techniques can be classified as \emph{black-box} ones,
+coarse level, testing techniques can be classified as \emph{black-box},
 \ie those that are \emph{not} allowed to see the internals of the System Under
 Test (SUT), and \emph{white-box} ones, \ie those that need to have access to
 the code of the SUT (and therefore require its availability).  In the context
@@ -191,13 +192,13 @@ Effective frameworks for testing TLS implementations include
 numerous previously unknown vulnerabilities and bugs~\cite{MessyTLS@CACM-17}.
 
 \paragraph{Model Learning}
-Model learning~\cite{Angluin1987,Vaandrager@CACM-17} (aka \emph{active
-automata learning}) is an automated black-box technique which constructs state
-machine models of software and hardware components from information obtained
-by providing inputs and observing the resulting outputs. Model learning has
-been successfully used in several different application domains, including
-learning interfaces of classes in software libraries
-(e.g.,~\cite{HowarISBJ12}), and finding bugs and vulnerabilities in
+Model learning~\cite{Angluin1987,Vaandrager@CACM-17} (also known as
+\emph{active automata learning}) is an automated black-box technique which
+constructs state machine models of software and hardware components from
+information obtained by providing inputs and observing the resulting
+outputs. Model learning has been successfully used in several different
+application domains, including learning interfaces of classes in software
+libraries~\cite{HowarISBJ12}, and finding bugs and vulnerabilities in
 implementations of security-critical protocols
 (\eg~\cite{AJUV15,CPPR14,dRP15,FJV2016,SSH@SPIN-17,DTLS@USENIX-20}).
 
@@ -205,7 +206,7 @@ When applied to network protocols,
 model learning algorithms operate in two alternating phases: hypothesis construction and hypothesis validation.
 During hypothesis construction, selected sequences of input symbols are sent to the SUT, observing which
 sequences of output symbols are generated in response.
-When certain convergence criteria are satisfied, the 
+When certain convergence criteria are met, the 
 learning algorithm constructs a \emph{hypothesis}, which is a minimal state machine that is consistent with
 the observations recorded so far, and
 moves to the validation phase, in which the SUT is subject to a conformance testing algorithm which aims to validate that
@@ -328,11 +329,13 @@ for stateless programs often achieve, we believe that more sophisticated
 stateful fuzzing techniques need to be developed.
 
 
+\mycomment{
 \section{Significance and Scientific Novelty} \label{sec:significance}
 %=====================================================================
 \FIX{No text here yet :-(}
 
 \UNREVISED{However, it may be possibe to skip this section if we manage to have short ``Significance'' paragraphs for each of the six tasks in the next section.}
+}
 
 \mycomment{
   It is widely recognized that a challenge for software development is
@@ -394,7 +397,7 @@ requirements in terms of time and memory.
 This proposal builds upon recent work by our group, which we intend to use as
 a starting point for some of the tasks in~\cref{sec:description}, but also
 significantly extend it.  In this section, we briefly review the main results
-of these works and indicate how they are relevant for this proposal.
+of these prior works and indicate how they are relevant for this proposal.
 
 \paragraph{Protocol State Fuzzing}
 In work published in USENIX Security 2020~\cite{DTLS@USENIX-20}, we presented
@@ -433,15 +436,15 @@ More information about \system{DTLS-Fuzzer} can be found at its
 \paragraph{Automation}
 Although protocol state fuzzing has been used for many protocols, in all prior
 works (including our USENIX Security paper), the analysis of the learned state
-machine models was performed manually, in most cases using ocular inspection
+machine models was performed manually; in most cases using ocular inspection
 of the models.  This requires effort and expertise.  Moreover, unsurprisingly,
-it can miss bugs.  To automate the bug finding capability of state fuzzing
-approaches and unleash their full potential, we developed a \emph{novel} and
-\emph{general} technique for detecting state machine flaws, which we recently
-published~\cite{AutomataBased@NDSS-23} at the Network and Distributed System
-Security (NDSS 2023) Symposium.\footnote{As noted by the PC Chairs in their
-opening, our paper was the only paper with authors from Sweden accepted at
-NDSS 2023!}
+ocular inspection can miss bugs.  To automate the bug finding capability of
+state fuzzing approaches and unleash their full potential, we developed a
+\emph{novel} and \emph{general} technique for detecting state machine flaws,
+which we published~\cite{AutomataBased@NDSS-23} at the Network and Distributed
+System Security (NDSS 2023) Symposium.\footnote{As noted by the PC Chairs in
+their opening, our paper was the only paper with authors from Sweden accepted
+at NDSS 2023!}
 %
 Our technique takes as input a catalogue of state machine bugs for the
 protocol, each specified as a finite automaton which accepts sequences of
@@ -459,31 +462,31 @@ security vulnerabilities.
 \paragraph{Fuzzing}
 In a parallel line of work, we have been using and evaluating many of the
 mutation-based and hybrid fuzzing techniques published in the recent
-literature, and applying their associated fuzzers, over a period of more than
-three years, on the code base of the Contiki-NG Operating System for IoT
-devices. In the process, besides gaining significant experience and expertise
-in the area, we have been able to detect and correct a significant number of
-bugs and security vulnerabilies (which have resulted in a total of eleven
-CVEs), in Contiki-NG's code base. We have reported our experiences, as well as
-proposed a methodology to evaluate different grey-box fuzzing techniques, in a
-paper~\cite{SoManyFuzzers@ASE-22} that appeared in the 2022 ACM/IEEE
-Conference on Automated Software Engineering (ASE), and have publicly released
-a \href{https://github.com/assist-project/so-many-fuzzers-artifact}{new
+literature. We have also applied the fuzzers, over a period of more than three
+years, on the code base of the Contiki-NG Operating System for IoT devices. In
+the process, besides gaining significant experience and expertise in the area
+of fuzzing technology, we have been able to detect and correct a significant
+number of bugs and security vulnerabilies (which have resulted in a total of
+eleven CVEs), in Contiki-NG's code base. We have reported our experiences, as
+well as proposed a methodology to evaluate different grey-box fuzzing
+techniques, in a paper~\cite{SoManyFuzzers@ASE-22} that appeared in the 2022
+ACM/IEEE Conference on Automated Software Engineering (ASE).  Additionally, we
+have publicly released a
+\href{https://github.com/assist-project/so-many-fuzzers-artifact}{new
   benchmark suite} for fuzzer evaluation.
 %
-We point out that all the fuzzers we used in that work are \emph{not} stateful.
+We point out that all eight fuzzers we used in that work are \emph{not}
+stateful.
 
 
 \section{Project Description} \label{sec:description}
 %====================================================
 This section presents a number of tasks that we plan to pursue in
-order to achieve the goals of this project. \UNREVISED{For each of the directions
-we intend to work on, we first briefly present existing results and
-tools that can form a basis for our work, followed by a description of
-the tasks that we plan to work on and their significance.}
+order to achieve the goals of this project. We organize these tasks along the
+three dimensions of work that we briefly outlined at the end of~\cref{sec:aims}.
 
 \subsection{Algorithmic Improvements to Model Learning}
-
+%------------------------------------------------------
 %% Model learning algorithms that generate finite-state machine models of
 %% protocol implementations have shown effective in generating state machine
 %% models of important protocol implementations with even hundreds of states,
@@ -491,15 +494,16 @@ the tasks that we plan to work on and their significance.}
 %% [REFERENCES].
 %
 The main goal of this project is to intend to extend the power of protocol
-state fuzzing and stateful grey-box fuzzing techniques. One key ingredient for
-achieving this is to \emph{supply the fuzzers with richer learned models}. For
-example, in many situations, it is crucial for models to also be able to
-describe \emph{data flow}. Protocol specifications contain numerous
-requirements on the processing of parameter values in sequence numbers,
-identifiers, etc. To check them, corresponding models of protocol components
-must describe how different parameter values in sequence numbers, identifiers,
-etc.\ are processed and influence the control flow. Such models often take the
-form of \emph{extended finite state machines} (EFSMs).
+state fuzzing and stateful grey-box fuzzing techniques for network security
+testing.
+One key ingredient for achieving this is to \emph{supply the fuzzers with
+richer learned models}. For example, in many situations, it is crucial for
+models to also be able to describe \emph{data flow}. Protocol specifications
+contain numerous requirements on the processing of parameter values in
+sequence numbers, identifiers, etc. To check them, corresponding models of
+protocol components must describe how different parameter values in sequence
+numbers, identifiers, etc.\ are processed and influence the control flow. Such
+models often take the form of \emph{extended finite state machines} (EFSMs).
 
 \task{More Effective Algorithms for Learning EFSMs}
 %--------------------------------------------------
@@ -515,9 +519,8 @@ that we have developed~\cite{CasselHJS16}, called $SL^*$, requires a number of
 tests that is \emph{exponential} in the number of data parameters in a
 sequence of input packets. To make the approach effective, we will work along
 the following lines:
-\begin{itemize}
-\item
-  {\bf More efficient black-box learning algorithms:}
+\begin{description}
+\item[More Efficient Black-box Learning Algorithms]
   The main reason why $SL^*$ uses an excessive number of queries is that, in
   order to generate minimal automata models, it performs an exponential number
   of tests to determine how previous inputs may influence future behaviours.
@@ -529,10 +532,9 @@ the following lines:
     % We are currently reimplementing \system{RALib}~\cite{} to incorporate
     % this optimization.
   \item
-    By relaxing the guarantee to generate minimal models, we can just apply a carefully selected set of input sequences within a given budget, and thereafter find a combination of guards and assignments that agree with the observed test results. This line will use techniques from programming-by-example, which has been successfully used in other contexts~\cite{GulwaniPS17}. The work on Prognosis~\cite{Prognosis@SIGCOMM-21} exhibits an \emph{ad hoc} use of this idea.
+    By relaxing the guarantee to generate minimal models, we can just apply a carefully selected set of input sequences within a given budget, and thereafter find a combination of guards and assignments that agree with the observed test results. This line will use techniques from programming-by-example, which has been successfully used in other contexts~\cite{GulwaniPS17}. Existing work on the Prognosis tool~\cite{Prognosis@SIGCOMM-21} exhibits an \emph{ad hoc} use of this idea.
   \end{itemize}
-\item
-  {\bf Symbolic techniques for learning data flow models:}
+\item[Symbolic Techniques for Learning Data Flow Models]
   In a black-box setting, it may take an exponential number of tests to determine how previous inputs may influence future behaviours. One way to overcome this obstacle is to use white-box techniques. Symbolic execution is a suitable technique since it exposes the tests and assignments performed by an implementation while processing data parameters.
 In this way, a learner can observe directly which values are stored and which predicates are tested in a trace.
 The goal here is to develop a principled way to integrate symbolic execution into model learning algorithms.
@@ -542,31 +544,69 @@ only of a yes/no answer, but also includes the complete symbolic run induced by 
 sequence of input packets.
 The white-box learning algorithm $\Sigma^\ast$ \cite{BotincanB13} is an example of an approach in which the learner may pose ``symbolic'' membership queries.
 \FIX{TO BE CHECKED OUT}
-\end{itemize}
+\end{description}
 
 \task{Tailoring Model Learning for Security Protocols}
-A characterizing feature of security protocols is that they process and generate data using cryptographic algorithms for encryption, decryption, key generation, etc. Specifications of such protocols are carefully analyzed by interactive theorem provers, such as TAMARIN~\cite{TAMARIN@CAV-13} to verify that they are resilient to various forms of attacks. Such analyses assume precise models of protocol entities that focus on how encrypted data is processed and generated. Up to now, such models are derived from protocol specifications. It would be of great value to be able to obtain such models from actual implementations. We therefore plan to develop a version of the framework for learning EFSMs for security protocols: we
+A characterizing feature of security protocols is that they process and generate data using cryptographic algorithms for encryption, decryption, key generation, etc. Specifications of such protocols are carefully analyzed by theorem provers, such as \system{TAMARIN}~\cite{TAMARIN@CAV-13} to verify that they are resilient to various forms of attacks. Such analyses assume precise models of protocol entities that focus on how encrypted data is processed and generated. Up to now, such models are derived from protocol specifications. It would be of great value to be able to obtain such models from actual implementations. We therefore plan to develop a version of the framework for learning EFSMs for security protocols: we
 will leverage the commonly used Dolev-Yao attacker model~\cite{DolevYao83} for generating the input. This model describes how attackers can construct inputs from previously exchanged data. Our
-model learning framework would use this model to produce test inputs, observe the induced output, and construct a model consistent with these observations. The Dolev-Yao model is not very complex, implying that the number of test inputs should be tractable for common security protocols.
+model learning framework would use this model to produce test inputs, observe the induced output, and construct a model consistent with these observations. The Dolev-Yao model is not very complex, implying that the number of test inputs should be tractable for common security protocols, which would make the approach scalable.
 
 % \significance{}
 
-\subsection{Effective Fuzzing Techniques}
+\subsection{Effective Stateful Fuzzing Techniques}
+%-------------------------------------------------
+We will employ the more efficient model learning algorithms that produce
+richer state machines of protocol implementations to enhance the effectiveness
+and error detection capabilities of fuzzing techniques.
 
-\task{Protocol State Fuzzing and Automatic Detection of State Machine Errors}
-\FIX{Kostis writes}
-\significance{}
+\task{Protocol State Fuzzing \& Automatic Detection of State Machine Errors}
+%---------------------------------------------------------------------------
+Unfortunately, employing more advanced model learning algorithms for protocol
+state fuzzing purposes is not straightforward.  The main reason is that, as
+mentioned in~\cref{sec:SOTA}, to learn realistic SUTs of network protocols,
+the learning setup needs to be extended with an appropriate \emph{mapper}.
+For complex network protocols, there exists a natural trade-off between the
+level of detail in the abstraction that the mapper provides (\eg which and how
+many guard predicates it can express, how coarse- or fine-grained is the data
+domain, etc.) and the amount of additional information that the richer state
+machine models which are learned contain.  To make protocol state fuzzing
+based on EFSMs scalable and effective, and avoid using unnecessarily
+approximate state machine models, we need to develop a general method that
+strikes the right balance in this trade-off.
+%
+It is also quite likely that this trade-off turns out to be protocol-specific;
+\ie that it may need to take into account some information about the
+characteristics of the protocol (\eg how many messages the protocol contains,
+how many parameters its messages have, how big are the domains of these
+parameters, etc.)
+
+For maintaining full automation in the detection of state machine errors, of
+equal importance is to extend the automata-based algorithm of our recent
+NDSS'2023 paper~\cite{AutomataBased@NDSS-23} to work with EFSMs instead of
+plain FSMs.  A technical complication is that the technique uses intersection
+of FSMs (\ie intersection of regular languages) as its core ingredient, for
+which efficient algorithms are known. For EFSMs, whose alphabets include
+(arbitrary) predicates as well as ``plain'' symbols, it is unclear whether
+suitable such intersection algorithms exist, let alone efficient ones.
+Maintaining automation may involve translation of EFSMs to some appropriate
+language and use of SMT solvers to generate sequences of messages that expose
+some state machine bug and validate it in the actual SUT.
+
+% \significance{}
 
 \task{Stateful Grey-box Fuzzing} \FIX{Kostis writes}
-\significance{}
+
+% \significance{}
 
 \subsection{Practice}
+%--------------------
+\task{Tools \& Case Studies} \FIX{Kostis writes}
 
-\task{Tool Development \& Case Studies} \FIX{Kostis writes}
-\significance{}
+% \significance{}
 
 \task{Methodologies} \FIX{Kostis writes}
-\significance{}
+
+% \significance{}
 
 
 \mycomment{
