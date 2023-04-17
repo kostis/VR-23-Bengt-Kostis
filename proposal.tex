@@ -1,0 +1,1140 @@
+% -*- mode: LaTeX; fill-column: 78; -*-
+\documentclass[11pt]{article}
+\usepackage{url}
+\usepackage{paralist}
+\usepackage{fullpage}
+\usepackage{microtype}
+\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+\usepackage[
+  bookmarks=true,bookmarksopen=true,bookmarksnumbered=false,%
+  colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue
+]{hyperref}
+
+\usepackage[capitalize]{cleveref}
+\crefname{section}{Sect.}{Sect.}
+\Crefname{section}{Section}{Sections}
+
+\usepackage{enumitem}
+\setlist{leftmargin=4.5mm}
+
+\usepackage[leftmargin=1.4em]{quoting}
+
+\renewcommand{\rmdefault}{ptm}
+\setlength{\topmargin}{-30pt}
+\setlength{\textheight}{1.08\textheight}
+
+\newcommand{\mycomment}[1]{}
+\newcommand{\FIX}[1]{\textcolor{red}{\textbf{#1}}}
+\newcommand{\UNREVISED}[1]{\textcolor{DarkGrey}{#1}}
+\newcommand{\system}[1]{\mbox{\textsf{#1}}}
+
+\newcounter{Task}
+\newcommand{\task}[1]{\addtocounter{Task}{1}\paragraph{Task \theTask: #1}}
+\newcommand{\significance}[1]{\vspace*{-0.5em}%
+  \begin{quoting}\noindent\textbf{Significance:} #1\end{quoting}}
+
+\newcommand{\myparagraph}{}
+\let\myparagraph=\paragraph
+\renewcommand{\paragraph}{\vspace{-3mm}\myparagraph}
+
+\let\OLDthebibliography\thebibliography
+\renewcommand\thebibliography[1]{
+  \OLDthebibliography{#1}\small
+  \setlength{\parskip}{0pt}
+  \setlength{\itemsep}{.9pt plus 0.3ex}
+}
+
+\newcommand{\eg}{e.\/g.,\ }
+\newcommand{\ie}{i.\/e.,\ }
+\newcommand{\etal}{\textit{et al.}}
+
+\begin{document}
+
+\title{\bf Effective Security Testing of Network Protocol Implementations}
+\author{}
+\date{}
+
+\maketitle
+\thispagestyle{plain}
+
+%\begin{abstract}
+%\end{abstract}
+
+\vspace*{-1.75em}
+
+\section{Purpose and Aims}
+%=========================
+It made the news again! On April 14th, 2023, one of the days that this
+proposal was written, the world news reported that ``\textit{Rheinmetall
+  AG, a German automotive and arms manufacturer, has suffered a
+  cyberattack.}'' Due to the nature of the company, which among other products
+manifactures the Leopard 2 tanks, not many details were disclosed. In
+some sense, we would be OK if cybersecurity attacks were confined to weapons
+and arms companies. Unfortunately, they affect many other parts of our
+society. In the summer of 2021, one of the major supermarket chains in Sweden
+was forced to an urgent, nationwide lockdown of its stores after being
+attacked by the (then largest) ransomware attack of all time. Even worse, in
+Sept~2020, for the first time ever, a patient’s death has been linked to a
+cyberattack after ransomware disrupted emergency care at Düsseldorf University
+Hospital in Germany.
+%
+The recent past and the current predictions do not paint a happy picture.
+According to Security Magazine (Dec 2022), ``\textit{there are over $2,200$
+attacks each day which breaks down to nearly one cyberattack every $39$ seconds.}''
+%
+According to a report by Cybersecurity Ventures, ``\textit{the total cost of
+  cybercrime worldwide is projected to break \$8 trillion in 2023.
+  In 2022, there were a record number of data breaches, with the
+  global \emph{average} cost reaching \$4.35 million.}''
+
+Although cyberattacks have many culprits, many of them are enabled by bugs and
+security vulnerabilities in implementations of network protocols, often due to
+nonconformance to their protocol's specification. Even seemingly innocent
+deviations from the specification may expose implementations to security
+risks. Network protocols that establish secure connections (\eg SSH, TLS,
+DTLS, QUIC, etc.) must carefully manage the type and order of exchanged
+messages and cryptographic material, by maintaining a (often complicated)
+state machine which keeps track of how far the protocol has progressed. Any
+deviation from the order prescribed in the protocol's specification may
+constitute anything between an inconsequential error to a serious
+vulnerability. Corresponding implementation flaws, called \emph{state machine
+bugs}, may then be exploitable, \eg to bypass authentication steps or
+establish insecure
+connections~\cite{MessyTLS@CACM-17,ruiter2015,somorovsky2016,DTLS@USENIX-20}.
+Another kind of vulnerabilities in protocol implementations is caused by
+errors such as buffer overflows, out-of-bounds reads, rounding errors, etc.
+Unfortunately, the stateful nature of protocol implementations makes it very
+challenging to apply commonly employed software testing techniques such as
+\emph{coverage-based fuzzing}.
+
+The \textbf{aim} of this proposal is to extend the power of techniques for
+security testing of network protocol implementations, and show their
+applicability and the benefits they bring to implementations of protocols
+which are widely used to secure the Internet and IoT systems.
+
+\FIX{KS: Will continue here...}
+\mycomment{
+%
+This undertaking involves designing and implementing techniques for
+handling all three sources of non-determinism in concurrent software:
+\emph{data}, \emph{scheduling}, and \emph{memory model non-determinism}.
+%
+To handle data dependencies, it requires adaptation and further
+development of techniques from symbolic and concolic execution that
+have made testing of sequential programs practical and effective.
+%
+To combat the combinatorial explosion due to scheduling
+non-determinism, it involves extending the power of partial order and
+symmetry reduction algorithms, and tailoring them to be able to handle
+effectively concurrency constructs used in real programs (\eg using
+synchronization constructs other than ``standard'' locks, dynamic
+process creation, message passing, etc.).
+%
+Finally, to be able to reason about concurrency errors due to effects
+of the memory model of the underlying platform and not suffer from a
+severe increase in the number of additional thread interleavings that
+need to be examined, it requires developing formal models that
+\emph{precisely} reflect the behaviours of programs running on modern
+architectures, effective ways of capturing the additional memory model
+dependencies, and ways to map them back to constructs that the partial
+order reduction algorithms can handle.
+%
+Of course, all these need to be implemented in appropriate tools---or
+at least usable prototypes---so that their effectiveness on programs
+of significant size can be evaluated.
+
+Our aim is to build upon our recent experiences with concolic
+execution of programs~\cite{CutEr@PPDP-15} and on the solid theoretical
+foundation for stateless model checking that we have developed
+(namely, two very powerful algorithms for dynamic partial order
+reduction~\cite{DPOR@POPL-14} and the effective application of one
+algorithm to the TSO and PSO memory
+models~\cite{Nidhugg@TACAS-15}; see \cref{sec:description}),
+extend the power of techniques for systematic testing of concurrent
+programs, and strike a proper balance between theoretical and
+practical work in the following directions:
+\begin{description}
+\item[Algorithmic Improvements to Techniques for Stateless Model Checking.]
+  Starting from an optimal algorithm for dynamic partial order
+  reduction~\cite{DPOR@POPL-14}, we plan to:%
+  \begin{inparaenum}[(i)]
+    \item extend it so that it also effectively supports
+      synchronization constructs of modern programming languages
+      (\eg atomics and synchronization without locks, await
+      statements, etc.);
+    \item investigate whether it is possible to combine
+      that algorithm with bounding techniques in a manner that does
+      not affect its soundness and optimality;
+     \item extend it to perform targeted exploration
+      of process interleavings using techniques from concolic
+      execution.
+  \end{inparaenum}
+  For programs with non-acyclic state spaces we will investigate the
+  combination of our DPOR algorithms with \emph{unfolding}
+  techniques~\cite{KSH:ase15,UnfoldingPOR@CONCUR-15} and how to
+  obtain higher coverage of the space of executions by combining
+  testing with SAT-solver guided symbolic execution. Finally, we will
+  characterize pros and cons of these techniques, both algorithmically
+  and experimentally, in order to provide general recommendations for their
+  use.
+\item[Formal Models and Connections with Modern Programming Languages.]
+  We will develop:%
+  \begin{inparaenum}[(i)]
+    \item A foundation for concolic testing of languages with
+      higher-order constructs, something which currently does not
+      exist and is required for applying concolic testing to programs
+      written in concurrent languages supporting pattern-matching and
+      higher-orderness, such as Erlang or Scala.
+    \item A model checker that verifies the behaviour of programs that
+      run on modern multicore architectures and precisely capture the
+      additional dependencies due to the synchronization primitives of
+      the language or of the platform. Such behaviours may deviate
+      substantially from those under sequential consistency, making
+      existing definitions of program semantics inadequate. We will
+      therefore define new criteria for program correctness that
+      capture accurately the sources of concurrency errors due to
+      relaxed memory. Here, we will target C11 and C++11 programs, and
+      we expect that this work will also assist the development of
+      language standards per se.
+  \end{inparaenum}
+\item[Tools and Case Studies.] We will develop scalable systematic testing
+  tools that can directly handle large concurrent software written in C and
+  C++, such as the Linux kernel, and programs written in actor languages
+  such as Erlang, and we will demonstrate their scalability on non-trivial
+  case studies. In addition, we will extend and strengthen the tools and
+  prototypes that the PI's group has built in the recent past, and
+  investigate their uses and applicability in new application areas. Two of
+  the areas we already have in mind are testing and verification of
+  protocols for sensor networks
+  and for scalable distributed programming.
+\end{description}
+
+For tool development, we will, at least initially, base our work on
+two existing testing tools for Erlang (\system{Concuerror} and
+\system{CutEr}) and a tool for C/C++ with pthreads (\system{Nidhugg}),
+which are presented below.
+}
+
+\section{State of the Art}
+%=================================================================
+Testing is and will continue to be a dominant technique for checking
+correctness properties of programs and protocol implementations.  At a very
+coarse level, testing techniques can be classified as \emph{black-box} ones,
+\ie those that are \emph{not} allowed to see the internals of the System Under
+Test (SUT), and \emph{white-box} ones, \ie those that need to have access to
+the code of the SUT (and therefore require its availability).  In the context
+of \emph{fuzz testing}, the term \emph{grey-box} is often used to denote a
+variant of white-box testing that can obtain only partial information from the
+code of the SUT, \eg the code coverage that has been achieved.
+%
+This proposal is concerned with black-box and grey-box protocol testing
+techniques, so below we focus only on them.
+
+\paragraph{Protocol Testing}
+Many network protocols and their implementations have been thoroughly analyzed
+for different kinds of vulnerabilities and bugs.  In the case of the Transport
+Layer Security (TLS) protocol alone, previously discovered security
+vulnerabilities include cryptographic attacks (\eg Bleichenbacher's
+attack~\cite{Bleichenbacher1998}, CBC padding oracle
+attacks~\cite{Vaudenay:CBCWeaknesses:02}, Lucky13~\cite{Lucky13@SP-13}, etc.),
+and the famous Heartbleed~\cite{heartbleed} bug in OpenSSL caused by a buffer
+over-read.
+%
+Effective frameworks for testing TLS implementations include
+\system{TLS-Attacker}~\cite{somorovsky2016} and
+\system{FlexTLS}~\cite{FlexTLS@WOOT-15}, which have been key in discovering
+numerous previously unknown vulnerabilities and bugs~\cite{MessyTLS@CACM-17}.
+
+\paragraph{Model Learning}
+Model learning~\cite{Vaandrager@CACM-17} is an automated black-box technique
+which needs to be supplied the input and output alphabets of the SUT.  In most
+cases of learning models of protocol implementations, some form of abstraction
+is also needed~\cite{AJUV15}, \ie a way to map concrete protocol packets to
+abstract alphabet symbols, and vice versa.
+%
+Most model learning algorithms (\eg the classic $L^*$~\cite{Angluin1987} or
+the more recent TTT~\cite{IHS2014} algorithm)
+% assume that the SUT exhibits deterministic behavior and
+produce a deterministic Mealy machine as a model by operating in two alternating
+phases: \emph{hypothesis construction} and \emph{hypothesis validation}.
+%
+\FIX{Bengt continues}
+
+\paragraph{Protocol State Fuzzing}
+Systematic state fuzzing through analysis of protocol state machines obtained
+by model learning was first done in 2015, in work that uncovered new
+vulnerabilities in TLS implementations~\cite{ruiter2015}.
+%
+For DTLS, corresponding work was performed by our group~\cite{DTLS@USENIX-20}
+in 2020.  We developed a state fuzzing framework,
+% DTLS-Fuzzer~\cite{DTLS-Fuzzer@ICST-22},
+based on \system{TLS-Attacker}, and applied it to DTLS servers discovering
+several previously unknown bugs and vulnerabilities; more in~\cref{sec:prelim}.
+%
+State fuzzing has also been applied to many other protocols including
+TCP~\cite{FJV2016}, SSH~\cite{SSH@SPIN-2017},
+OpenVPN~\cite{OpenVPN@EuroSPW-2018}, the 802.11 4-Way
+Handshake~\cite{stone2018}, and IPsec~\cite{guo2019model}, leading to the
+discovery of several security vulnerabilities and non-conformance issues in
+their implementations.
+%
+%% In the works on OpenVPNand the 802.11 4-way Handshake, the detection of
+%% state machine bugs is through ocular inspection of models.  In the works on
+%% TCP, SSH and IPsec protocol requirements were encoded in linear temporal
+%% logic (LTL) and model checked against the learned models.
+
+\paragraph{Differential Testing of Protocol Models}
+A related black-box approach for detecting protocol state machine bugs uses
+model learning to generate models of several different implementations of a
+protocol, and then compares these models to find discrepancies in them.
+%
+This approach, which has been applied to TCP~\cite{SFADiff},
+MQTT~\cite{Tappler@ICST-2017}, QUIC~\cite{Prognosis@SIGCOMM-21} and 4G
+LTE~\cite{DIKEUE@CCS-21} protocol implementations, can be regarded as
+\emph{differential testing}, but with differences detected in models rather
+than in output to individual test inputs.
+
+\paragraph{Model Checking}
+Approaches that combine techniques from model learning and model
+checking~\cite{MC:handbook} have also been proposed.
+%
+(They are known as \emph{black box checking}~\cite{BBC} and \emph{adaptive
+model checking}~\cite{AdaptiveMC}, an adaptation of model checking to a
+black-box setting.)
+% , and applied to simple finite-state systems.
+%
+Most model checkers require a model of the analyzed system, which is typically
+provided manually, \eg from some design specification.  The intersection of
+this model with representations of the requirements for the system is then
+explored for bugs.  This approach is often used for analyzing protocols, \eg
+to find attacks on the 4G LTE protocol~\cite{LTEInspector}, on
+TCP~\cite{Jero@DSN-15}, or on vehicle protocols~\cite{Hu:usenix21}.
+Models can also be obtained using white-box techniques, \eg using symbolic
+execution of manually instrumented source code~\cite{Hoque@DSN-17,Themis:ccs21}
+or static analysis~\cite{Cao:ccs19}.
+
+\paragraph{Fuzz Testing}
+Fuzz testing (or fuzzing) is a dynamic bug discovery technique that tests
+systems via a large randomly generated (or mutated) test suite. The goal of
+fuzzing is to detect bugs, especially security vulnerabilities, through
+testing with unexpected inputs. Fuzzing dates back to 1990 when Miller
+\etal~\cite{Fuzz@CACM-90} used black-box fuzzing to find crashes in UNIX
+utilities. In recent years, due to its ease of use and effectiveness, fuzzing
+has become a popular and widely-used testing technique and fuzzers have found
+thousands of bugs in real-world software~\cite{AFL}. Recent surveys on
+fuzzing~\cite{FuzzingSurvey@TSE-21,FuzzingRoadmap@CompSurveys-22} and \eg
+\href{https://wcventure.github.io/FuzzingPaper/}{this webpage} show that
+fuzzing is a trending research topic, with a high number of publications each
+year in top software engineering and security conferences, which are too many
+to review here. \FIX{Kostis continues}
+
+\mycomment{
+  Testing is and will continue to be a dominant technique for
+checking correctness properties of programs. However, it suffers from
+known limitations.
+%
+A key problem is to cover the enormous number of different paths of a
+program with a finite number of tests.  For testing of sequential
+programs, well-established notions of \emph{coverage} have been
+developed to ensure that a test suite covers a representative sample
+of all executions. Increased coverage can be achieved by maintaining
+information during dynamic execution of the program, using symbolic
+execution techniques~\cite{King:symbolic}.
+%
+Important techniques in this paradigm include \emph{dynamic symbolic
+  execution} (also known as \emph{concolic testing}~\cite{GKS:dart}),
+\emph{predictive testing}~\cite{JSS:predictive}, and \emph{active
+  testing}~\cite{JNPS:cav09}. For sequential programs of limited size,
+such techniques give definite improvements, but for concurrent
+programs the space of possible control flow qqpaths is enormous due to
+the number of possible interleavings between concurrently executing
+threads. It has been difficult to find techniques that adequately
+cover this vast space of schedulings. Successful attempts in this
+direction include bounding the number of thread
+preemptions~\cite{ContextBounding@PLDI-07}, the BPOR
+technique~\cite{BPOR@OOPSLA-13}, and incorporating a fair scheduler in
+stateless exploration~\cite{FairStatelessMC@PLDI-08}.  Such techniques
+have been implemented \eg in the \system{CHESS} tool from Microsoft
+Research~\cite{Chess@OSDI-08}, context-bounded model
+checking~\cite{CBMC@TACAS-08}, and the partial order reduction
+techniques that have been incorporated in tools for concolic testing
+\cite{jCUTE@CAV-06}.
+
+Commonly used approaches in the area of testing concurrent programs
+include \emph{dynamic partial-order reduction}~\cite{DPOR@POPL-05},
+\emph{reachability testing}~\cite{ReachabilityTesting@TSE-06}, which
+uses on-the-fly partial order reduction techniques, and
+\emph{coverage-guided testing}~\cite{CoverageTesting@ICSE-11}, which
+uses dynamically-learned ordering constraints over shared state
+interactions to select only high-risk interleaving sequences for
+execution.
+
+Even though several (stateful) model checkers target concurrent
+programs, most of them attempt to capture the program state at the
+cost of space explosion. Notable examples of such stateful model
+checkers are \system{Bogor}~\cite{Bogor@ESEC-11},
+\system{CMC}~\cite{CMC@OSDI-02}, \system{Java
+  PathFinder}~\cite{PathFinder@ASE-00}, and
+\system{Basset}~\cite{Basset@ASE-09}.  \system{Basset} is built on top
+of \system{Java PathFinder} and provides a framework for testing actor
+programs compiled to Java bytecode. Contrary to the technique used by
+that tool, the approach we intend to pursue and extend is more similar
+to the stateless enumeration of process interleaving sequences, as in
+stateless model checking tools like
+\system{VeriSoft}~\cite{Verisoft@POPL-97} and
+\system{CHESS}~\cite{Chess@OSDI-08}.
+
+The area of testing has developed quite a lot in the last decade and
+imported a range of techniques from, \eg constraint solving and
+symbolic execution. Several new coverage criteria and heuristics for
+using a lot of computer power to thoroughly test concurrent programs
+are being developed. As an example, at Microsoft, programs are
+extensively tested for vulnerabilities using tools like
+\system{SAGE}~\cite{SAGE@CACM-12} running on large clusters.
+\system{SAGE} incorporates symbolic execution and constraint solving
+techniques to obtain high coverage.
+
+Recent trends also include proposals to exploit techniques that are
+complementary to testing, such as symbolic program analysis and model
+checking. Static analyses are typically conservative, meaning that a
+number of false alarms are reported. Testing, on the other hand, finds
+some but not all bugs: therefore the testing effort can be directed
+towards the potential bugs found by static analysis: this approach has
+been advocated for a number of different classes of concurrency
+errors~\cite{Sen:pldi08,JNPS:cav09}.
+
+Recently, there have also been many works tacking the third source of
+non-determinism in programs, namely techniques that take the effects of
+relaxed memory models into account (\eg~\cite{BAM07,BM08,AlglaveM11,LNPVY12,BurnimSS11,BouajjaniDM13,ZhangKW@PLDI-15,SATCheck@OOPSLA-15,MCR-TSO@OOPSLA-16}). Some
+of them (\eg~\cite{BouajjaniDM13}) propose \emph{precise} analyses
+for checking safety properties or robustness of finite-state programs
+under TSO.  Others (\eg~\cite{BM08,BurnimSS11,LNPVY12}) describe
+monitoring and stateless model checking testing techniques for
+programs under relaxed memory models.  There have also been a number of
+efforts to design bounded model checking techniques for programs running
+under relaxed memory models, by encoding the verification problem in a
+formula that can be solved by a SAT solver (\eg~\cite{BAM07,AlglaveKT13,MCR-TSO@OOPSLA-16}).
+%
+Very interesting recent works in this area that explore the power
+of SAT solvers are SATCheck~\cite{SATCheck@OOPSLA-15} and
+MCR~\cite{MCR@PLDI-15,MCR-TSO@OOPSLA-16}.
+}
+
+
+\section{Significance and Scientific Novelty} \label{sec:significance}
+%=====================================================================
+\FIX{No text here yet :-(}
+
+\UNREVISED{However, it may be possibe to skip this section if we manage to have short ``Significance'' paragraphs for each of the six tasks in the next section.}
+
+\mycomment{
+  It is widely recognized that a challenge for software development is
+designing and deploying techniques and tools that enhance software
+reliability, and allow the automatic detection of software defects, so
+called ``bugs.'' Indeed, it is currently the case that identifying and
+fixing software bugs accounts for more than 50\% of the development cost of
+software, both for Swedish industry, as well as in the rest of the world.
+%
+Moreover, this cost is rising.
+%
+One of the reasons for this increase is that, as time passes, a larger
+percentage of the programs are becoming not only more complex but also more
+concurrent.
+%
+Concurrent programs are notoriously difficult to get right and test
+effectively. Specific interleaving sequences that occur only rarely can
+trigger unexpected errors and result in crashes that are surprising even to
+expert programmers. Moreover, these bugs are hard to track and cannnot
+easily be reproduced; for that reason, they are often referred to as
+\textit{heisenbugs}.  Of course, heisenbugs are not a new problem.  The
+difference today, compared to \eg two decades ago, is that at that time
+concurrent programs would be found mainly in the core of operating systems,
+and these were built by specialists.  Nowadays, concurrent programs are
+pretty much everywhere, they are often built by relatively inexperienced
+programmers, and, to make matters worse, they run on platforms with relaxed
+memory.  Besides better awareness of the issues involved, which requires
+education, effective techniques and tools that help software developers are
+needed.
+
+However, even in software projects where developers are experts, such as in
+the Linux kernel, systematic concurrency testing and verification tools are
+needed, perhaps today even more than ever.  Nowadays, the Linux kernel is
+used in a surprisingly large number of devices: from PCs and servers, to
+routers and smart TVs.  For example, in 2015 more than one billion smart
+phones used a modified version of the Linux
+kernel~\cite{AndroidPhonesKernel}, and in 2016 almost all modern
+supercomputers used Linux as well~\cite{SupercomputersKernel}.
+%
+It should be obvious that the correct and reliable operation of such
+software is of great importance for our society.  Unfortunately, the
+relatively frequent development cycle of the Linux kernel (there is a new
+release every approximately two months), the number of changes that are
+involved in each release, and the increasing complexity of the kernel's code
+render the verification of its complete code base out-of-reach for current
+state-of-the-art techniques; even the partial verification of its components
+using explicit-state model checking currently requires too much memory and
+time.
+%
+As we will see in the next section, we have good reasons to believe that
+the systematic concurrency testing and stateless model checking techniques
+that we have developed can be applied to such code bases with reasonable
+requirements in terms of time and memory.
+}
+
+
+\section{Preliminary and Previous Results} \label{sec:prelim}
+%============================================================
+This proposal builds upon recent work by our group, which we intend to use as
+a starting point for some of the tasks in~\cref{sec:description}, but also
+significantly extend it.  In this section, we briefly review the main results
+of these works and indicate how they are relevant for this proposal.
+
+\myparagraph{Protocol State Fuzzing}
+In work published in USENIX Security 2020~\cite{DTLS@USENIX-20}, we presented
+the first comprehensive analysis of DTLS\footnote{The DTLS (Datagram TLS)
+protocol is the cryptographic variation of TLS running over UDP. It is one of
+the two security protocols in WebRTC, and one of the primary protocols for
+securing IoT applications. Our work focused on version 1.2 of DTLS.}
+implementations using protocol state fuzzing.  To do this, we extended
+TLS-Attacker
+% , an open source framework for analyzing TLS implementations,
+with support for DTLS, which involved developing automata learning techniques
+tailored to the stateless and unreliable nature of the underlying UDP layer,
+which is connectionless.  We built a framework for applying protocol state
+fuzzing on DTLS servers, and used it to learn state machine models for
+thirteen DTLS server implementations, including all the most known ones
+(OpenSSL, GnuTLS, MbedTLS, JSEE, WolfSSL, and NSS).
+%
+Analysis of the learned state models revealed four serious security
+vulnerabilities, including a full client authentication bypass in the then
+latest JSSE (Java Secure Socket Extension) version,\footnote{This security
+vulnerability was assigned
+\href{https://nvd.nist.gov/vuln/detail/CVE-2020-2655}{CVE-2020-2655}; it
+resulted in an Oracle critical patch update and a
+\href{https://web-in-security.blogspot.com/2020/01/cve-2020-2655-jsse-client.html}{blog
+  post} about it.} as well as several interoperability bugs and
+non-conformance issues in most other servers we analyzed.
+
+\myparagraph{Tool Development}
+Subsequently, we packaged our work in a model learning and testing tool for
+DTLS implementations and also extended it with support for DTLS clients. We
+open-source released this tool, called \system{DTLS-Fuzzer}, and described it
+in a tool paper~\cite{DTLS-Fuzzer@ICST-22} published in the IEEE Conference on
+Software Testing, Verification and Validation (ICST 2022).
+%
+More information about \system{DTLS-Fuzzer} can be found at its
+\href{https://github.com/assist-project/dtls-fuzzer/}{GitHub page}.
+
+\myparagraph
+Although protocol state fuzzing has been used for many protocols, in all prior
+works (including our USENIX Security paper), the analysis of the learned state
+machine models was performed manually, in most cases using ocular inspection
+of the models.  This requires effort and expertise.  Moreover, unsurprisingly,
+it can miss bugs.  To automate the bug finding capability of state fuzzing
+approaches and unleash their full potential, we developed a \emph{novel} and
+\emph{general} technique for detecting state machine flaws, which we recently
+published~\cite{AutomataBased@NDSS-23} at the Network and Distributed System
+Security (NDSS 2023) Symposium.\footnote{As noted by the PC Chairs in their
+opening, our paper was the only paper with authors from Sweden accepted at
+NDSS 2023!}
+%
+Our technique takes as input a catalogue of state machine bugs for the
+protocol, each specified as a finite automaton which accepts sequences of
+messages that exhibit the bug, and the model of the implementation under
+test. It then automatically constructs the set of sequences that (according to
+the model) can be performed by the implementation and that (according to the
+automaton) expose the bug. These sequences are then transformed to test cases
+on the actual implementation to find a witness for the bug. We have applied
+our technique on three widely-used implementations of SSH servers (BitVise,
+Dropbear, and OpenSSH) and on various versions of nine different DTLS server
+and client implementations, and have been able to detect a significant number
+of previously unknown bugs and non-conformances in them, including two new
+security vulnerabilities.
+
+In a parallel line of work, we have been using and evaluating many of the
+mutation-based and hybrid fuzzing techniques published in the recent
+literature, and have been applying their associated fuzzers, over a period of
+more than three years, on the code base of the Contiki-NG Operating System for
+IoT devices.  In the process, besides gaining ificant experience and
+expertise in the area, we have been able to detect and correct a significant
+number of bugs and security vulnerabilies (which have resulted in a total of
+eleven CVEs), in its code base. We have reported our experiences, as well as
+proposed a methodology to evaluate different grey-box fuzzing techniques, in a
+paper~\cite{SoManyFuzzers@ASE-22} that appeared in the 2022 ACM/IEEE
+Conference on Automated Software Engineering (ASE) and have publicly released
+a \href{https://github.com/assist-project/so-many-fuzzers-artifact}{new
+  benchmark suite} for fuzzer evaluation.
+%
+However, we point out that all the fuzzers we used in this work are \emph{not}
+stateful.
+
+
+\mycomment{
+Very recently, we have used \system{Nidhugg} to test one particular
+subsystem of the Linux kernel with a non-trivial implementation, namely its
+Read-Copy-Update (RCU) mechanism.  RCU~\cite{McKenney@Queue-13} is a
+synchronization mechanism used heavily in key components of the Linux
+kernel, such as the virtual filesystem (VFS), to achieve scalability by
+exploiting RCU's ability to allow concurrent reads and updates.  RCU's
+design is quite involved and requires significant effort to fully
+understand it, let alone become convinced that its implementation is
+faithful to its specification and provides its claimed properties. Our
+modeling allowed us to reproduce, often within seconds, safety and liveness
+bugs that have been reported for RCU in recent years.  More importantly,
+using \system{Nidhugg} we were able to \emph{verify the Grace-Period
+  guarantee} of Hierarchical RCU (Tree RCU), the basic guarantee that RCU
+offers, which is crucial for its correctness, on five different Linux
+kernel versions (v3.0, v3.19, v4.3, v4.7, and v4.9.6, all in
+\emph{non-preemptible} builds).  Our approach was shown to be effective,
+both in dealing with the increased complexity of recent kernels and in
+terms of time that the process requires. Based on
+these results, presented in a paper which is currently under submission, we
+have good reasons to believe that our effort constitutes a big step towards
+making tools such as \system{Nidhugg} part of the standard testing
+infrastructure of the Linux kernel.  In fact, we are already working
+towards this.
+
+Still, there is quite a lot of work to be done.  Although we have verified
+that the actual code of Tree RCU satisfies its main correctness criterion,
+we are not yet at a point where we can claim with certainty that the
+complete implementation of Tree RCU is bug-free; there may be bugs in
+components of Tree RCU that are not included in our modeling and our
+tests. In addition, there are are many other requirements that RCU must
+meet. Thus, our work could be extended to include more aspects of RCU, and
+also test them under different memory models, not only under SC (Sequential
+Consistency) and x86 TSO (Total Store Order) as we have so far
+done. However, this requires significantly more powerful techniques than
+those that \system{Nidhugg} currently implements.  Equally challenging, if
+not impossible, with the current techniques implemented in \system{Nidhugg}
+is to handle the non-determinism that \emph{preemptible} Linux kernel
+builds require for their verification.
+}
+
+
+\section{Project Description} \label{sec:description}
+%====================================================
+This section presents a number of tasks that we plan to pursue in
+order to achieve the goals of this project. \UNREVISED{For each of the directions
+we intend to work on, we first briefly present existing results and
+tools that can form a basis for our work, followed by a description of
+the tasks that we plan to work on and their significance.}
+
+\subsection{Algorithmic Improvements to Model Learning}
+
+%% Model learning algorithms that generate finite-state machine models of
+%% protocol implementations have shown effective in generating state machine
+%% models of important protocol implementations with even hundreds of states,
+%% and have uncovered numerous significant bugs and vulnerabilities
+%% [REFERENCES].
+%
+The main goal of this project is to intend to extend the power of protocol
+state fuzzing and stateful grey-box fuzzing techniques. One key ingredient for
+achieving this is to \emph{supply the fuzzers with richer learned models}. For
+example, in many situations, it is crucial for models to also be able to
+describe \emph{data flow}. Protocol specifications contain numerous
+requirements on the processing of parameter values in sequence numbers,
+identifiers, etc. To check them, corresponding models of protocol components
+must describe how different parameter values in sequence numbers, identifiers,
+etc.\ are processed and influence the control flow. Such models often take the
+form of \emph{extended finite state machines} (EFSMs).
+
+\task{More Effective Algorithms for Learning EFSMs}
+%--------------------------------------------------
+In recent years, automata learning has been extended to EFSM models that
+combine control flow with guards and assignments to data
+variables~\cite{CasselHJS16,AJUV15}.
+% , and been applied to learn a model of flow control in TCP, discovering subtle bugs in the logic for sequence numbers in major implementations~\cite{FJV2016}.
+Unfortunately, the extension to EFSM model carries a significant cost in terms
+of the number of tests that must be performed in a black-box setting. For
+instance, to infer that a branch is taken if an input parameter is greater
+than $42$ may require some number of tests. The extension of $L^*$ to EFSM
+that we have developed~\cite{CasselHJS16}, called $SL^*$, requires a number of
+tests that is \emph{exponential} in the number of data parameters in a
+sequence of input packets. To make the approach effective, we will work along
+the following lines:
+\begin{itemize}
+\item
+  {\bf More efficient black-box learning algorithms:}
+  The main reason why $SL^*$ uses an excessive number of queries is that, in
+  order to generate minimal automata models, it performs an exponential number
+  of tests to determine how previous inputs may influence future behaviours.
+  We will reduce this number as follows:
+  \begin{itemize}
+  \item
+    By an algorithm that filters out queries that are not strictly necessary
+    for guaranteeing minimal models.
+    % We are currently reimplementing \system{RALib}~\cite{} to incorporate
+    % this optimization.
+  \item
+    By relaxing the guarantee to generate minimal models, we can just apply a carefully selected set of input sequences within a given budget, and thereafter find a combination of guards and assignments that agree with the observed test results. This line will use techniques from programming-by-example, which has been successfully used in other contexts~\cite{GulwaniPS17}. The work on Prognosis~\cite{Prognosis@SIGCOMM-21} exhibits an \emph{ad hoc} use of this idea.
+  \end{itemize}
+\item
+  {\bf Symbolic techniques for learning data flow models:}
+  In a black-box setting, it may take an exponential number of tests to determine how previous inputs may influence future behaviours. One way to overcome this obstacle is to use white-box techniques. Symbolic execution is a suitable technique since it exposes the tests and assignments performed by an implementation while processing data parameters.
+In this way, a learner can observe directly which values are stored and which predicates are tested in a trace.
+The goal here is to develop a principled way to integrate symbolic execution into model learning algorithms.
+The resulting technique could replace membership queries (is word $w$ in the language?) by a symbolic
+version in which the reply consists not
+only of a yes/no answer, but also includes the complete symbolic run induced by a
+sequence of input packets.
+The white-box learning algorithm $\Sigma^\ast$ \cite{BotincanB13} is an example of an approach in which the learner may pose ``symbolic'' membership queries.
+\FIX{TO BE CHECKED OUT}
+\end{itemize}
+
+\task{Tailoring Model Learning for Security Protocols}
+A characterizing feature of security protocols is that they process and generate data using cryptographic algorithms for encryption, decryption, key generation, etc. Specifications of such protocols are carefully analyzed by interactive theorem provers, such as TAMARIN~\cite{TAMARIN@CAV-13} to verify that they are resilient to various forms of attacks. Such analyses assume precise models of protocol entities that focus on how encrypted data is processed and generated. Up to now, such models are derived from protocol specifications. It would be of great value to be able to obtain such models from actual implementations. We therefore plan to develop a version of the framework for learning EFSMs for security protocols: we
+will leverage the commonly used Dolev-Yao attacker model~\cite{DolevYao83} for generating the input. This model describes how attackers can construct inputs from previously exchanged data. Our
+model learning framework would use this model to produce test inputs, observe the induced output, and construct a model consistent with these observations. The Dolev-Yao model is not very complex, implying that the number of test inputs should be tractable for common security protocols.
+
+% \significance{}
+
+\subsection{Effective Fuzzing Techniques}
+
+\task{Protocol State Fuzzing and Automatic Detection of State Machine Errors}
+\FIX{Kostis writes}
+\significance{}
+
+\task{Stateful Grey-box Fuzzing} \FIX{Kostis writes}
+\significance{}
+
+\subsection{Practice}
+
+\task{Tool Development \& Case Studies} \FIX{Kostis writes}
+\significance{}
+
+\task{Methodologies} \FIX{Kostis writes}
+\significance{}
+
+
+\mycomment{
+\subsection{Algorithmic Improvements to Techniques for Stateless Model Checking}
+%----------------------------------------------------------------
+Stateless model checking is a technique for systematically exploring
+all possible thread interactions that arise in the execution of runs
+of a (usually terminating) test of a program and detect any unexpected
+test results, program crashes, or assertion violations that occur.
+%
+In contrast to other (explicit state) model checking techniques, stateless
+model checking has very low memory requirements.
+%
+To combat the combinatorial explosion due to scheduling non-determinism,
+\emph{Partial Order Reduction (POR)}
+techniques~\cite{Valmari:reduced:state-space,Peled:representatives,Godefroid:thesis,CGMP:partialorder}
+are employed to limit the number of explored interleavings,
+usually \emph{dynamic} ones such as DPOR~\cite{DPOR@POPL-05}.
+%
+Till recently, the most effective POR techniques employed the notion
+of \emph{persistent sets}~\cite{Godefroid:thesis} (or one of its
+variations: \emph{stubborn sets}~\cite{Valmari:reduced:state-space}
+and \emph{ample sets}~\cite{CGMP:partialorder}) as their basis. The
+use of these sets allows the POR algorithm to explore only a provably
+sufficient subset of the enabled processes, and has been the basis of
+the area of stateless model checking for the last two decades.
+%
+In work published at POPL~\cite{DPOR@POPL-14} and was recently
+(March~2017) accepted to the Journal of the~ACM, we noticed that the
+notion of persistent sets is actually quite weak in that it often
+initiates exploration of redundant interleavings and fundamentally
+cannot provide optimality guarantees.  We therefore came up with two
+fundamental new notions, called \emph{source sets} and \emph{wakeup
+  trees}, that can be used as a new, more powerful basis for partial
+order reduction. We also developed two new algorithms,
+called \emph{source DPOR} and \emph{optimal DPOR}, that significantly
+extend the state-of-the-art in this area and outperform all existing
+algorithms by a wide margin, often by several orders of magnitude.
+
+Although these algorithms already form a fundamental contribution to
+the area, there is still a lot of work to be done.  For starters, the
+algorithms only work for programs without data- and control-flow
+non-determinism; \ie only when execution of each thread is fully reproducible.
+Another open problem is to characterize the space complexity of
+optimal DPOR; ideally to design a variation or extension that bounds
+the memory required for storing wakeup trees.  Finally, there are also
+open questions and extensions of the two DPOR algorithms with more
+practical flavour.  We intend to investigate all these as described
+below.
+
+\task{Combining Optimal DPOR and Bounding.}
+%-----------------------------------------------
+Recent progress in testing of concurrent programs includes controlling
+the scheduler, in order to force the execution of only some, rather than
+all, interleavings. Two of the main techniques that have been investigated
+rely on randomized scheduling and on bounding the number of context-switches
+(so called \emph{context bounding}), the number of preemptive context
+switches (\emph{preemption bounding}), or the number of times a process
+can be prohibited from running (\emph{delay bounding}). It has been
+claimed that most concurrency bugs can be triggered with relatively
+few deviations from a `normal' scheduling~\cite{Randomized@ASPLOS-10},
+a claim which has motivated the further development and investigation
+of these techniques~\cite{ScheduleBounding@PPoPP-14}.
+%
+While often very effective in
+practice~\cite{BPOR@OOPSLA-13,ScheduleBounding@PPoPP-14}, these heuristics
+to limit exhaustive search are rather simple and obtuse.  More importantly,
+they interact in very subtle ways with algorithms for dynamic partial order
+reduction and optimal DPOR in particular and the \emph{sound} combination
+with such algorithms with bounded trace exploration (or a proof that such a
+combination is impossible to obtain) is an important open problem for the
+area.  For example, even disregarding the optimal DPOR algorithm, which is
+very recent, so far none of the existing systematic testing tools has managed
+to support fully both DPOR and bounding without exploring redundant traces.
+%
+Among the first tasks we intend to study is how POR algorithms, and
+optimal DPOR in particular, can be combined with bounding techniques
+in ways that the resulting algorithm provides guarantees for
+both soundness and optimality.
+
+\significance{Currently, this is an open problem in the area of stateless
+  model checking with both theoretical and practical significance. Solving
+  it in an optimal way seems very challenging.}
+
+\task{Optimality Combined with Fairness.}
+%---------------------------------------------
+Another challenge in the area is to combine optimal DPOR with a
+\emph{fair scheduling} strategy~\cite{FairStatelessMC@PLDI-08}. This
+can be considered as an extension of bounding, as it eliminates
+interleavings that are impossible to happen on any unmonitored run of
+the program due to the design of the actual thread schedulers in
+operating systems or process schedulers in virtual machines.  Its
+effective combination with DPOR techniques in general and optimal
+DPOR in particular is equally challenging.
+
+\significance{This task is of practical nature, but its importance should
+  not be underestimated.  Under unfair scheduling strategies, i.e., when
+  the scheduler does not give a chance to some processes, stateless model
+  checking is not applicable to programs because they create a cyclic state
+  space; the only option for verifying these programs is to employ
+  considerably heavier explicit-state techniques.}
+
+\task{Symbolic/Concolic Execution Techniques to Guide DPOR.}
+%----------------------------------------------------------------
+Symbolic execution is a classic technique to enhance the power of testing,
+achieve better path coverage and/or guide it towards paths that are more
+likely to contain errors. Such symbolic and concolic (concrete+symbolic)
+techniques have been significantly refined in recent years; see a survey
+article in \textit{CACM}~\cite{SymbolicTesting@CACM-13}.
+% and a recent (Nov.~2015) keynote~\cite{Concolic@WADA-15}.
+Despite its advances for sequential programs, the
+technique is still not well developed for concurrent programs: better
+symbolic approaches are needed to efficiently avoid redundant
+exploration of similar executions. For this, inspiration could be
+taken from recently published
+works~\cite{MCR@PLDI-15,SATCheck@OOPSLA-15,MCR-TSO@OOPSLA-16} that employ
+SAT solvers to obtain considerable, often maximal, reduction in the number
+of explored interleavings.
+%
+Another approach is to combine techniques for symbolic execution with
+techniques to cover different schedulings with minimal effort (\eg
+the algorithms for targeted selection of interleavings described in
+the previous paragraph).
+%
+In any case, techniques from symbolic/concolic execution are clearly needed
+for programs that depend on external inputs or contain forms of data
+non-determinism.
+
+\significance{An effective technique for handling data non-determinism is
+  needed not only for many practical applications, but also in order to be
+  able to compare in a better way the pros and cons of stateless vs.\/
+  explicit-state model checking techniques and tools.}
+}
+
+\mycomment{
+\subsection{Formal Models and Connection with Modern Programming Languages}
+%--------------------------------------------------------------------------
+
+\task{A Foundation for Concolic Execution of Programs in Higher-Order Languages.}
+%---------------------------------------------------------------
+Concolic execution has so far mainly been explored in the context of
+low-level languages such as C~\cite{CUTE@FSE-05} or LLVM
+assembly~\cite{KLEE@OSDI-08}.  Recently, we have extended concolic
+execution to functional languages, and described in detail how to take
+pattern matching into account~\cite{CutEr@PPDP-15}.  However, more and more
+modern programming languages also come with higher-order constructs (\eg
+lambdas, closures, etc.).  Whether it is possible for a concolic
+engine to handle such constructs and, if so, what is the best way to do
+this is not clear.  Equally challenging is to map higher-order functions to
+the language of modern SAT solvers such as Z3~\cite{Z3} or
+CVC4~\cite{CVC4@CAV-11}.
+%
+We intent to investigate these issues by developing a suitable formalism
+for concolic execution of higher-order programs that can also be proven
+correct.  We will initially target higher-order functional languages
+(Erlang in particular), but we will subsequently extend the formalism to
+also include more mainstream languages with support for higher-order
+constructs (\eg Scala). Needless to say, this effort will complement the
+previous task that aims to combine DPOR with techniques from concolic
+execution, since both these languages come with built-in support for
+concurrency.
+
+\significance{This will be the first time that concolic execution of
+  higher-order programs will be formalized.  Such a formalism could become
+  a ``standard'' reference in the area and may result in widespread
+  adoption of this important testing technique by programmers of these
+  languages as well.}
+
+
+\task{Model Checking C11/C++11 Programs.} \label{task:rcmc}
+%----------------------------------------------------------
+We plan to build a model checker for C/C++ programs that use the
+synchronisation primitives (atomic accesses and fences) introduced by the
+2011 versions of the C and C++ standards and adhere to the concurrency
+model of these standards. These synchronisation primitives allow writing
+efficient architecture-independent concurrent code and are increasingly
+being adopted as they are natively supported by the mainstream C/C++
+compilers. Currently, however, there exist only a few ad hoc techniques for
+testing C/C++ programs with these primitives; these techniques either
+provide no formal guarantees of coverage nor of optimality. We intend to
+leverage the optimal DPOR work to provide both these guarantees: exploring
+all possible executions of a program (up to some loop unrolling depth)
+without exploring the same execution twice. The main challenge in achieving
+this is that the C/C++ concurrency model is defined in an axiomatic style
+(whereas SC and TSO also have operational definitions) and so the
+exploration algorithm will directly have to consider partially-ordered
+executions rather than execution traces.
+
+Besides the obvious benefit of enabling verification of standard-adhering
+concurrent C/C++ programs, we expect that this work will also assist the
+development of the C/C++ standards per se. The C/C++ standards are
+currently undergoing revision, as a number of subtle problems have been
+identified in their concurrency models, and some fixes have been
+proposed. There are long discussions about these fixes, largely because
+their impact on existing software is unclear. We believe that an automated
+verification tool capable of testing existing code with respect to the
+C/C++ model and slight modifications thereof will prove indispensable in
+the process, not only speeding up the discussions of the standards
+committee, but also avoiding the introduction of further subtle errors in
+the standard.
+
+\significance{Techniques and tools that are able to handle the subtleties
+  of modern versions of C and C++ concurrency are currently lacking. This
+  is a problem, not only for program developers, but also for programming
+  language researchers and committees that need to standardize and further
+  extend these languages in an ever-changing landscape of architectures
+  with relaxed memory.}
+}
+
+\mycomment{
+\task{Methodology for Test Specifications.}
+%-----------------------------------------------
+The question of how much and what to test in order to maximize
+coverage is still to a large degree unanswered.  We will try to
+address this question.
+%
+One approach could be to develop and systematically test concurrent
+programs using an enhanced version of \system{Concuerror} (which
+handles scheduling non-determinism) with a technique that employs a
+concolic tool, such as \system{CutEr}~\cite{CutEr@PPDP-15}, to handle
+data (input) non-determinism.
+%
+On a related topic, an interesting open question is the following:
+Given a test case that shows the absence or presence of concurrency
+errors, how can one minimize this test (\eg decrease the number of
+processes involved in it) and still be certain that the test continues
+to test the absence or presence of the same set of concurrency errors?
+Though the general case of the problem is obviously undecidable, one
+could possibly go far by mapping the actions that a systematic testing
+tool has to do in order to avoid exploration of interleavings during
+execution back to the source code of the test.
+
+\significance{These tasks are of practical nature, but they are
+  important for achieving impact and make these testing techniques
+  more easily adopted by programmers out there.}
+}
+
+
+\mycomment{
+\subsection{Tools and Case Studies}
+%----------------------------------------
+In order to demonstrate the applicability of our techniques in the
+``real-world'', we intend to also work on issues that have more of an
+engineering and practical flavor.
+
+\task{Tool Development and Support.}
+%---------------------------------------------
+Our group has a long tradition of creating open source software tools that
+are not just prototypes, but instead attract a significant number of users.
+In the area of this proposal, we have recently released the first version
+of a concolic testing tool for Erlang, called \system{CutEr}
+(\url{github.com/aggelgian/cuter}), that has already managed to build a
+sizable user community.\footnote{In March 2017, CutEr had 165
+  ``stargazers'' on GitHub and, most likely, more users than this number.}
+%
+Also, the DPOR algorithms that we have designed form the basis of
+\system{Concuerror} (\url{www.concuerror.com}), a stateless model checking
+tool for Erlang, and \system{Nidhugg} (\url{github.com/nidhugg/nidhugg}), a
+stateless model checking tool for C and C++ programs using the pthread
+library.
+
+Throughout the duration of this project, we will make an effort to
+incorporate our techniques into these tools, and will be releasing them to
+the user community of their target language(s).  In addition, we will try
+to engage their users, not only to provide us with feedback, but also in
+order to give us access to code bases where we can conduct case studies,
+evaluate the effectiveness of our techniques, and get inspiration for new
+ones that may be needed.
+%
+% We believe we are in a unique position to do so.
+%
+Additionally, we will complement the user manuals of the tools with
+tutorials, and we will try to present them both to scientific conferences
+of the area and to suitable developer conferences.
+
+\task{Effective Visualization of Concurrency Errors.}
+%----------------------------------------------------
+This is a relatively small task, but our experiences tell us that it is an
+important one.  Once a stateless model checking tool has found a
+concurrency error, understanding the chain of events that have caused it
+can be extremely difficult, even for the developers that originally wrote
+the code. The output of the tool is often just a textual log of the events
+that have lead up to the error.  Even after such logs have been manually
+minimized, the real cause for the error can still be difficult to see;
+especially if the error involves some effects from relaxed memory.  We plan
+to design and implement techniques for visualizing concurrency errors in
+better ways, most likely graphical ones, and incorporate them in our tools.
+The goal is to make reports of concurrency errors as easy for programmers
+to understand as compiler errors are in modern compilers.
+
+\task{Case Studies.}
+%-------------------
+As mentioned in the beginning, one of the goals of this proposal is to
+demonstrate the applicability and benefits that the techniques we will
+develop bring to code bases of significant size.  One code base we intend
+to use for cases studies is the Linux kernel.  Besides being open source
+and widely used, it is also of significant size and quite complex from the
+perspective of concurrency primitives it uses.  Its code base is thus quite
+challenging for most techniques that detect concurrency bugs or verify
+their absence.  However, for this exact reason, it is also suitable for
+serving as an ``acid test'', for attracting interest from the community and
+achieving high impact.
+
+Another set of case studies we intend to perform is testing and
+verification of (implementations of) protocols for sensor networks and for
+scalable distributed programming.  A concurrent and distributed language
+such as Erlang, is ideal for \emph{modeling} sensor network protocols or
+protocols for scalable distribution.  Given such a model, a stateless model
+checking tool like \system{Concuerror} can then be used to detect bugs in
+the protocol or verify that the protocol behaves correctly in all possible
+executions (interleavings of processes in the model).  We are currently
+working on verifying the correctness of a distributed algorithm (a shared
+log design of flush clusters) using such an approach.
+}
+
+
+\section{National and International Collaboration}
+%=================================================
+Within Sweden, besides a long collaboration with the participating researcher
+(Prof.~Bengt Jonsson), the group of the main applicant collaborates with
+research groups within the IT department of Uppsala University, most notably
+with the verification group (Profs.~Parosh Abdulla and Mohamed Fauzi Atig),
+the computer architecture group (Prof.~Stefanos Kaxiras) on implementing the
+ArgoDSM system, and the sensor network group (Prof.~Thiemo Voigt) on testing
+sensor networks~\cite{PBT@SECON-15}.
+%
+Since 1999, he has maintained a close collaboration with the
+\system{Erlang/OTP} development team at Ericsson, on issues related to the
+implementation and evolution of the Erlang language, its native code compiler
+(\system{HiPE}), the \system{Dialyzer} static analysis tool, and
+\system{TypEr}. All these, which have been built by the group of the PI, have
+been part of the Erlang/OTP (Open Telecom Platform) distribution, and are
+actively used by the Erlang and Elixir programming communities.
+
+In the context of \href{https://assist-project.github.io}{SSF aSSIsT project},
+he has collaborated with researchers at RISE in using fuzzing to detect and
+fix security vulnerabilities in the
+\href{https://www.contiki-ng.org/}{Contiki-NG} OS for Next Generation IoT
+devices.
+
+Internationally, the PI has collaborated with the group of Viktor Vafeiadis at
+the Max Plank Institute for Software Systems (Germany) on algorithms and tools
+for model checking C/C++11 programs, with
+% Paul McKenney, a Distinguished Engineer
+engineers at the IBM Linux Technology Center (USA) on the verification of
+RCU, a key component of the Linux kernel, and
+% Scott Lystig Fritchie
+at VMware Research (USA) on verification of protocols for repairing
+distributed clusters after a failure.
+%
+He has also collaborated with members of the
+\href{http://release-project.eu/}{RELEASE EU project} (ended 2015) at the
+Universities of Glasgow and Kent (both in the U.K.) on developing a high-level
+paradigm for large-scale server software, and with groups at the Barcelona
+Supercomputing Center (Spain) and Fraunhofer (Germany) as part of the
+\href{https://epeec-project.eu/}{EPEEC EU project} (ended 2022) on a
+productive programming environment for Exascale Computing.
+
+International collaborations directly relevant to this proposal are with:
+\begin{inparaenum}[(1)]
+\item Researchers of the Network and Data Security group at Ruhr-Universit\"at
+  Bochum, and with Prof. Juraj Somorovsky at the University of Paderborn (both
+  in Germany), on techniques for protocol state fuzzing and applying them on
+  (D)TLS implementations;
+\item Dr.~Joeri de Ruiter, a researcher and specialist for security and
+  privacy at SIDN Labs (Netherlands), also on protocol state fuzzing
+  techniques;
+\item Dr.~Thanassis Avgerinos, a former student of the main PI, who has been a
+  team member of the Mayhem Cyber Reasoning system and is now Founder and Vice
+  President of Engineering of ForAllSecure Inc.\ (USA); and
+\item Prof.~Falk Howar, Chair of Software Engineering at the Dortmund
+  University of Technology (Germany) working on automata learning.
+\end{inparaenum}
+
+\section{Other Applications, Grants, and Activities}
+%===================================================
+We request funds to cover the yearly salary of a Post Doctoral researcher.
+We expect that we will employ a total of two PostDocs during the duration of
+this project, quite likely overlapping in time during 2025--2026.
+%
+In addition, we request some funding (15\%) for the main applicant who is
+committed to be involved 20\% of his time in this project, and some moderate
+funds for open access publication costs, conference participation, and
+research visits.
+%
+This application is \emph{not} submitted to any other funding agency.
+
+%\vspace*{-.5em}
+%\paragraph{Other Grants.}
+\noindent
+The only other funding of the main PI comes from its involvement in:
+\vspace*{-.5em}
+\begin{quoting}
+  \textbf{aSSIsT: Secure Software for the Internet of Things}.
+  A Project on Cybersecurity from the Swedish Foundation for Strategic
+  Research (SSF), July 2018--2022. \url{https://assist-project.github.io}
+\end{quoting}
+\vspace*{-.5em}
+%
+This is a joint grant between Uppsala University and RISE (Research Institutes
+of Sweden) involving four PIs (two at UU and two at RISE).  The aSSIsT project
+was supposed to have already ended, but has been allowed to use its remaining
+funds also in 2024. (No further extension is allowed.) At UU, these remaining
+funds currently support two PostDocs and two Ph.D.\ students working on
+various aspects of IoT security and correctness.  Both Ph.D.\ students are
+expected to graduate during 2024.
+
+Uppsala University has Cybersecurity as one of its prioritized areas.  The
+Division of Computing Science (Datalogi), where the main PI belongs, is
+currently recruiting a new Associate Professor (``BUL'') with specialization
+in Cybersecurity. (The position closed in March 2023; 31 candidates have
+applied.)  The IT Department is also partly supporting activities of
+Ph.D.\ students working in the area of Cybersecurity, and runs a regular
+seminar series in the area.  An upcoming related activity is SWITS (Swedish IT
+Security Network for PhD students), organized in 29--30th of May 2023 in
+Uppsala at the premises of the IT Department.
+
+Last but not least, both PIs of this project regularly supervise MSc theses in
+the area of cybersecurity and software correctness, and incorporate aspects of
+their research and the tools that their groups have produced in undergraduate
+and graduate courses that they are involved.  Occasionally, we are fortunate
+enough to excite students to the point that they become contributors to the
+tools' development. In any case, we strongly believe that an important aspect
+of being part of a research University is to expose students to new techniques
+and tools, and raise their awareness of issues that are related to the
+importance of network and software security.
+
+
+%======================================================================
+\bibliographystyle{abbrv}
+\bibliography{trimmed}
+%======================================================================
+
+\end{document}
