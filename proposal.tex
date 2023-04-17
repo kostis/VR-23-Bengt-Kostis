@@ -191,19 +191,52 @@ Effective frameworks for testing TLS implementations include
 numerous previously unknown vulnerabilities and bugs~\cite{MessyTLS@CACM-17}.
 
 \paragraph{Model Learning}
-Model learning~\cite{Vaandrager@CACM-17} is an automated black-box technique
-which needs to be supplied the input and output alphabets of the SUT.  In most
-cases of learning models of protocol implementations, some form of abstraction
-is also needed~\cite{AJUV15}, \ie a way to map concrete protocol packets to
-abstract alphabet symbols, and vice versa.
+Model learning~\cite{Angluin1987,Vaandrager@CACM-17} (aka \emph{active
+automata learning}) is an automated black-box technique which constructs state
+machine models of software and hardware components from information obtained
+by providing inputs and observing the resulting outputs. Model learning has
+been successfully used in several different application domains, including
+learning interfaces of classes in software libraries
+(e.g.,~\cite{HowarISBJ12}), and finding bugs and vulnerabilities in
+implementations of security-critical protocols
+(\eg~\cite{AJUV15,CPPR14,dRP15,FJV2016,SSH@SPIN-17,DTLS@USENIX-20}).
+
+When applied to network protocols,
+model learning algorithms operate in two alternating phases: hypothesis construction and hypothesis validation.
+During hypothesis construction, selected sequences of input symbols are sent to the SUT, observing which
+sequences of output symbols are generated in response.
+When certain convergence criteria are satisfied, the 
+learning algorithm constructs a \emph{hypothesis}, which is a minimal state machine that is consistent with
+the observations recorded so far, and
+moves to the validation phase, in which the SUT is subject to a conformance testing algorithm which aims to validate that
+the behavior of the SUT agrees with the hypothesis.
+%% thoroughly test for input sequences for which the hypothesis mispredicts the response by the SUT.
+If conformance testing finds a counterexample, i.e., an input sequence on which the SUT and the hypothesis disagree, the
+hypothesis construction phase is reentered in order
+to build a more refined hypothesis which also takes the discovered
+counterexample into account. If no counterexample is found, learning terminates and returns the current hypothesis.
+
+Model learning algorithms work in practice with finite input alphabets of modest sizes. In order to learn realistic SUTs, for which the alphabet of packets can be huge, the learning setup is extended with
+a so-called \emph{mapper}, which
+% acts as a test harness that
+transforms input symbols from the finite alphabet known to the learning algorithm to actual protocol
+messages sent to the SUT.
+Typically, the input alphabet consists of different types of messages, often
+refined to represent interesting variations, e.g., concerning the key exchange algorithm.
+The mapper transforms each such message to a SUT message by
+supplying message parameters, performing cryptographic operations, etc.
+The mapper also maintains state that is hidden from the
+learning algorithm but needed for supplying message parameters; this can include sequence numbers, agreed encryption keys, etc.
+
+The most widely known algorithm for model learning of finite automata 
+is Angluin's $L^*$~\cite{Angluin1987}.
+% , which has, e.g., been implemented in the LearnLib framework~\cite{IHS2015}.
+A key strengh of model learning is that it aims to produce succinct models of
+the externally observable behavior of the SUT.
 %
-Most model learning algorithms (\eg the classic $L^*$~\cite{Angluin1987} or
-the more recent TTT~\cite{IHS2014} algorithm)
-% assume that the SUT exhibits deterministic behavior and
-produce a deterministic Mealy machine as a model by operating in two alternating
-phases: \emph{hypothesis construction} and \emph{hypothesis validation}.
-%
-\FIX{Bengt continues}
+This allows it to extract simple models of complex software, especially if
+we choose the right perspective (e.g., focus on a subset of a component's
+functionality) and apply appropriate abstractions.
 
 \paragraph{Protocol State Fuzzing}
 Systematic state fuzzing through analysis of protocol state machines obtained
@@ -217,7 +250,7 @@ based on \system{TLS-Attacker}, and applied it to DTLS servers discovering
 several previously unknown bugs and vulnerabilities; more in~\cref{sec:prelim}.
 %
 State fuzzing has also been applied to many other protocols including
-TCP~\cite{FJV2016}, SSH~\cite{SSH@SPIN-2017},
+TCP~\cite{FJV2016}, SSH~\cite{SSH@SPIN-17},
 OpenVPN~\cite{OpenVPN@EuroSPW-2018}, the 802.11 4-Way
 Handshake~\cite{stone2018}, and IPsec~\cite{guo2019model}, leading to the
 discovery of several security vulnerabilities and non-conformance issues in
