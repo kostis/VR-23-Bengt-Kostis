@@ -131,19 +131,18 @@ programs.
 To achieve the above, we intend to build upon recent techniques, a tool, and
 experiences of our group (cf.\ \cref{sec:prelim}), and extend all these along
 the following three dimensions, which we briefly overview below:
-\begin{description}
+\begin{description}[itemsep=-0.5mm]
 \item[Algorithmic Improvements to Model Learning] A core ingredient for all
   security testing techniques we intend to develop or extend is to discover,
-  in a fully automated way, as much information about the state machines of
-\bjcom{I suggest ``stateful behavior''}
+  in a fully automated way, as much information about the stateful behavior of
   protocol implementations as possible. The technique we will employ for this
   is \emph{model learning}~\cite{Angluin1987,Vaandrager@CACM-17}, and the
   challenge is to develop \emph{scalable} algorithms that learn models which
   are quite rich in information (\eg models whose symbols also contain
-  parameters or capture data flow). Currently, no such algorithms exist;
-\bjcom{I suggest: ``automated such algorithms are naive, and do not scale to actual protocol implementations}
-  coming up with such model learning algorithms is not only interesting for
-  security, but is also applicable to many other areas.
+  parameters or capture data flow). Currently, automated such algorithms are
+  na{\"\i}ve, and do not scale to actual protocol implementations. Coming up
+  with such model learning algorithms is not only interesting for security,
+  but is applicable to many other areas as well.
 \item[Effective Stateful Fuzzing Techniques] We will employ the richer
   learned models for extending the power of \emph{protocol state fuzzing} and
   \emph{stateful coverage-driven fuzzing} techniques, thereby allowing them
@@ -491,8 +490,8 @@ This section presents a number of tasks that we plan to pursue in
 order to achieve the goals of this project. We organize these tasks along the
 three dimensions of work that we briefly outlined at the end of~\cref{sec:aims}.
 
-\subsection{Algorithmic Improvements to Model Learning}
-%------------------------------------------------------
+\subsection{Algorithmic Improvements to Model Learning} \label{sec:algorithms}
+%-----------------------------------------------------------------------------
 %% Model learning algorithms that generate finite-state machine models of
 %% protocol implementations have shown effective in generating state machine
 %% models of important protocol implementations with even hundreds of states,
@@ -525,10 +524,10 @@ for determining how previous inputs may influence future behaviours, which
 requires a number of tests that is \emph{exponential} in the number of data parameters in a
 sequence of input packets.
 We will reduce this number as follows by applying natural optimizations that
- filter out queries that are not necessary for guaranteeing minimal models.
+filter out queries that are not necessary for guaranteeing minimal models.
     % We are currently reimplementing \system{RALib}~\cite{} to incorporate
     % this optimization.
- We can also optimize further    by relaxing the guarantee to generate minimal models.
+ We can also optimize further by relaxing the guarantee to generate minimal models.
 Then we are free to apply a carefully selected set of input sequences within a given budget, and thereafter find a combination of guards and assignments that agree with the observed test results. This line will use techniques from programming-by-example, which has been successfully used in other contexts~\cite{GulwaniPS17}. Recent work on the Prognosis tool~\cite{Prognosis@SIGCOMM-21} exhibits an \emph{ad hoc} use of this idea.
 
 Another strategy for reducing the test effort needed for model generation is to move away from
@@ -593,22 +592,41 @@ standardly used in model checking~\cite{MC:handbook}.
 % for which efficient algorithms are known.
 For richer models, such as EFSMs, whose alphabets also include (arbitrary)
 predicates as well as ``plain'' symbols, it is unclear whether suitable such
-intersection algorithms exist, let alone efficient ones.  Maintaining
+intersection algorithms exist, let alone efficient ones. Maintaining
 automation may involve translation of the information in EFSMs to some
-appropriate language, and use SMT solvers to generate sequences of messages
-that expose some state machine bug and validate it in the actual SUT.
+appropriate language, use SMT solvers to generate sequences of messages that
+expose some state machine bug, and validate this sequence in the actual SUT.
 
 % \significance{}
 
-\task{Stateful Grey-box Fuzzing} \FIX{Kostis writes}
+\task{Stateful Grey-box Fuzzing}
+%-------------------------------
+As mentioned in~\cref{sec:SOTA}, currently very few stateful coverage-based
+grey-box fuzzers exist (\eg~\cite{AFLNET@ICST-20,StateAFL@ESE-22}). Moreover,
+all of them use very crude approximations and/or heuristics to discover,
+during fuzzing, the stateful behaviour of the SUTs they analyze, and start the
+fuzzing process from each of these states. We have good reasons to believe
+that we can construct significantly more effective coverage-based grey-box
+fuzzers for security protocol implementations by supplying them,
+ahead-of-fuzzing, with fine-grained information about the state machine of the
+SUT, which we will of course automatically learn using the algorithms
+of~\cref{sec:algorithms}.
+
+In addition, we intend to design appropriate mutation strategies that take
+packet structure into account, and leverage protocol-specific characteristics
+for narrowing the input space and improving the effectiveness of triggering
+bugs and security vulnerabilities for the protocol whose SUT is being fuzzed.
+A similar idea has recently been expored in some directed and mutation-based
+fuzzers~\cite{Frankenstein@USENIX-20,SweynTooth@ATC-20,Braktooth@USENIX-22}
+which are targeting the Bluetooth protocol.
 
 % \significance{}
 
 \subsection{Practice}
 %--------------------
-The third dimension of our work has a more practical flavor, namely to
-implement our techniques in tools, apply them in case studies, and developing
-an appropriate methodology for their use by protocol implementors. We describe
+To maximize the impact of our work, we will implement our techniques in
+publicly available tools, apply them in case studies. We will also develop
+appropriate methodologies for their use by protocol implementors. We describe
 all these below.
 
 \task{Software Tools \& Case Studies}
@@ -642,9 +660,9 @@ implementations, both in order to measure their effectiveness and scalability
 (or discover bottlenecks that they may have), but also in order to detect bugs
 and security vulnerabilities in them and hopefully make them more robust and
 more secure. Of particular interest to use as case studies are implementations
-of newly proposed and more lightweight network protocols (such as \eg
-EDHOC~\cite{ietf-lake-edhoc-18}), which are put forward as more tailored to
-the low energy requirements of IoT systems.
+of newly proposed and more lightweight network protocols (such as \eg the
+EDHOC protocol~\cite{ietf-lake-edhoc-18} promoted by Ericsson), which are put
+forward as more tailored to the low energy requirements of IoT systems.
 
 % \significance{}
 
@@ -654,22 +672,23 @@ Oftentimes, bugs and security vulnerabilities, both in software in general and
 in network protocol implementations in particular, manage to survive for a
 long time not because techniques and tools to detect them do not exist, but
 because the community of their developers is unaware of the proper way to
-incorporate them in their development cycle.  We hold that a crycial part of
+incorporate them in their development cycle. We hold that a crucial part of
 tool development is to also suggest appropriate methodologies for their most
 effective use, and publicize these methodologies, not only on the tools'
-homepages, but also in developers' community fora.  We have some prior
-experience in this area, and are committed to spend some effort in this task
-as part of our engagement in this project.
+homepages, but also in developers' community fora. We have some prior
+experience in giving keynotes in developers' conferences, and are committed to
+spend some effort in this task as part of our engagement in this project.
 
 Another area of our current interest, as also witnessed by our ASE'2022
 paper~\cite{SoManyFuzzers@ASE-22}, is to develop and suggest to the research
 community appropriate methodologies for the proper evaluation and comparison
-of fuzzers.  Although, besides our paper, there is recent work that evaluates
+of fuzzers. Besides our paper, there is plenty of recent work that evaluates
 stateless
-fuzzers~\cite{EvaluatingFuzz@CCS-18,Magma@POMACS-20,UNIFUZZ@USENIX-21,FIXREVERTER@USENIX-22},
-there is very little work on a developing an proper methodology and
-appropriate benchmark suites for evaluating the ability of stateful fuzzers to
-detect security vulnerabilities. We intend to work on this.
+fuzzers~\cite{EvaluatingFuzz@CCS-18,Magma@POMACS-20,UNIFUZZ@USENIX-21,FIXREVERTER@USENIX-22}.
+However, currently there is very little work on a developing a proper
+methodology and appropriate benchmark suites for evaluating the ability of
+stateful fuzzers to detect security vulnerabilities. We intend to work on
+this.
 
 % \significance{}
 
@@ -1043,7 +1062,8 @@ International collaborations directly relevant to this proposal are with:
   team member of the Mayhem Cyber Reasoning system and is now Founder and Vice
   President of Engineering of ForAllSecure Inc.\ (USA); and
 \item Prof.~Falk Howar, Chair of Software Engineering at the Dortmund
-  University of Technology (Germany) working on automata learning.
+  University of Technology (Germany) and lead maintainer of LearnLib and RALib.
+  We are collaborating with him on automata learning.
 \end{inparaenum}
 
 \section{Other Applications, Grants, and Activities}
