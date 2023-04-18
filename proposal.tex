@@ -503,13 +503,13 @@ The main goal of this project is to intend to extend the power of protocol
 state fuzzing and stateful grey-box fuzzing techniques for network security
 testing.
 One key ingredient for achieving this is to \emph{supply the fuzzers with
-richer learned models}. For example, in many situations, it is crucial for
-models to also be able to describe \emph{data flow}. Protocol specifications
+richer learned models}. One reason is to be able to
+capture \emph{data flow}. Protocol specifications
 contain numerous requirements on the processing of parameter values in
 sequence numbers, identifiers, etc. To check them, corresponding models of
 protocol components must describe how different parameter values in sequence
-numbers, identifiers, etc.\ are processed and influence the control flow. Such
-models often take the form of \emph{extended finite state machines} (EFSMs).
+numbers, identifiers, etc.\ are processed and influence the control flow.
+Such models often take the form of \emph{extended finite state machines} (EFSMs).
 
 \task{More Effective Algorithms for Learning EFSMs}
 %--------------------------------------------------
@@ -518,44 +518,38 @@ combine control flow with guards and assignments to data
 variables~\cite{CasselHJS16,AJUV15}.
 % , and been applied to learn a model of flow control in TCP, discovering subtle bugs in the logic for sequence numbers in major implementations~\cite{FJV2016}.
 Unfortunately, the extension to EFSM model carries a significant cost in terms
-of the number of tests that must be performed in a black-box setting. For
-instance, to infer that a branch is taken if an input parameter is greater
-than $42$ may require some number of tests. The extension of $L^*$ to EFSM
-that we have developed~\cite{CasselHJS16}, called $SL^*$, requires a number of
-tests that is \emph{exponential} in the number of data parameters in a
-sequence of input packets. To make the approach effective, we will work along
-the following lines:
-\begin{description}
-\item[More Efficient Black-box Learning Algorithms]
-  The main reason why $SL^*$ uses an excessive number of queries is that, in
-  order to generate minimal automata models, it performs an exponential number
-  of tests to determine how previous inputs may influence future behaviours.
-  We will reduce this number as follows:
-  \begin{itemize}
-  \item
-    By an algorithm that filters out queries that are not strictly necessary
-    for guaranteeing minimal models.
+of the number of tests that must be performed in a black-box setting.
+%% For instance, to infer that a branch is taken if an input parameter is greater than $42$ may require some number of tests.
+The extension of $L^*$ to EFSM that we have developed~\cite{CasselHJS16}, called $SL^*$, uses a naive technique 
+for determining how previous inputs may influence future behaviours, which
+requires a number of tests that is \emph{exponential} in the number of data parameters in a
+sequence of input packets.
+We will reduce this number as follows by applying natural optimizations that
+ filter out queries that are not necessary for guaranteeing minimal models.
     % We are currently reimplementing \system{RALib}~\cite{} to incorporate
     % this optimization.
-  \item
-    By relaxing the guarantee to generate minimal models, we can just apply a carefully selected set of input sequences within a given budget, and thereafter find a combination of guards and assignments that agree with the observed test results. This line will use techniques from programming-by-example, which has been successfully used in other contexts~\cite{GulwaniPS17}. Existing work on the Prognosis tool~\cite{Prognosis@SIGCOMM-21} exhibits an \emph{ad hoc} use of this idea.
-  \end{itemize}
-\item[Symbolic Techniques for Learning Data Flow Models]
-  In a black-box setting, it may take an exponential number of tests to determine how previous inputs may influence future behaviours. One way to overcome this obstacle is to use white-box techniques. Symbolic execution is a suitable technique since it exposes the tests and assignments performed by an implementation while processing data parameters.
-In this way, a learner can observe directly which values are stored and which predicates are tested in a trace.
-The goal here is to develop a principled way to integrate symbolic execution into model learning algorithms.
-The resulting technique could replace membership queries (is word $w$ in the language?) by a symbolic
-version in which the reply consists not
-only of a yes/no answer, but also includes the complete symbolic run induced by a
+ We can also optimize further    by relaxing the guarantee to generate minimal models.
+Then we are free to apply a carefully selected set of input sequences within a given budget, and thereafter find a combination of guards and assignments that agree with the observed test results. This line will use techniques from programming-by-example, which has been successfully used in other contexts~\cite{GulwaniPS17}. Recent work on the Prognosis tool~\cite{Prognosis@SIGCOMM-21} exhibits an \emph{ad hoc} use of this idea.
+
+Another strategy for reducing the test effort needed for model generation is to move away from
+the black-box setting and instead apply grey-box or even symbolic white-box techniques. Such techniques allow to
+observe directly how data values in previous inputs influence future behaviors. Grey-box and white-box techniques offer
+different tradeoffs between the number tests that can be applied within a given time budget, and the level of information that
+can be obtained: Greybox-techniques can directly correlate changes in input to change in control flow, whereas white-box
+directly reveals which values are stored and which predicates are tested in a trace.
+We will investigate the optimal balance in this tradeoff.
+The goal here is to develop a principled way to integrate symbolic execution and/or coverage feedback into model learning algorithms.
+The resulting technique could replace membership queries (is word $w$ in the language?) by a white- or grey-box
+version in which the reply includes the symbolic output (white-box) and/or only coverage information (grey-box) induced by a
 sequence of input packets.
-The white-box learning algorithm $\Sigma^\ast$ \cite{BotincanB13} is an example of an approach in which the learner may pose ``symbolic'' membership queries.
-\FIX{TO BE CHECKED OUT}
-\end{description}
 
 \task{Tailoring Model Learning for Security Protocols}
 A characterizing feature of security protocols is that they process and generate data using cryptographic algorithms for encryption, decryption, key generation, etc. Specifications of such protocols are carefully analyzed by theorem provers, such as \system{TAMARIN}~\cite{TAMARIN@CAV-13} to verify that they are resilient to various forms of attacks. Such analyses assume precise models of protocol entities that focus on how encrypted data is processed and generated. Up to now, such models are derived from protocol specifications. It would be of great value to be able to obtain such models from actual implementations. We therefore plan to develop a version of the framework for learning EFSMs for security protocols: we
 will leverage the commonly used Dolev-Yao attacker model~\cite{DolevYao83} for generating the input. This model describes how attackers can construct inputs from previously exchanged data. Our
-model learning framework would use this model to produce test inputs, observe the induced output, and construct a model consistent with these observations. The Dolev-Yao model is not very complex, implying that the number of test inputs should be tractable for common security protocols, which would make the approach scalable.
+model learning framework would use this model to produce test inputs, observe the induced output, and construct a model consistent with these observations.
+In order to reverse-engineer output from the SUT, the model learner must have access to cryptographic operations and cryptographic material used by the SUT:
+such information is provided in standard test configurations.
+The Dolev-Yao model provides a small set of rules for how information in previous interactions can be used by an attacker, implying that the number of test inputs should be tractable for common security protocols, which would make the approach scalable.
 
 % \significance{}
 
