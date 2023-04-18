@@ -142,8 +142,8 @@ the following three dimensions, which we briefly overview below:
   security, but is also applicable to many other areas.
 \item[Effective Stateful Fuzzing Techniques] We will employ the richer
   learned models for extending the power of \emph{protocol state fuzzing} and
-  \emph{stateful coverage-driven fuzzing} techniques, thereby allowing them to
-  automatically detect more vulnerabilities and ``deeper'' errors. Note that
+  \emph{stateful coverage-driven fuzzing} techniques, thereby allowing them
+  to automatically detect more vulnerabilities and ``deeper'' errors. Note that
   these two techniques, which we will describe in more detail in the following
   sections, are techniques which are different and complementary to each
   other. The former aims to detect protocol state machine bugs (\ie logical
@@ -154,7 +154,7 @@ the following three dimensions, which we briefly overview below:
   techniques in suitable software tools, applying them to implementations of
   existing and new network protocols, which we will use as case studies. One
   purpose for running such case studies is to evaluate the effectiveness of
-  our techniques and robustify the implementations we will target. Another is
+  our techniques, and robustify the implementations we will target. Another is
   to help us develop methodologies for the most effective uses of these
   techniques by protocol implementors, which we might also engage in user
   studies.
@@ -312,7 +312,7 @@ to properly review here.
 This success has been possible due to its fully-automated approach, which is
 based on unsupervised evolution of fuzz inputs, using simple but at the same
 time effective heuristics. In contrast, research on coverage-driven fuzzing
-for stateful protocols is still at an early stage.
+for \emph{stateful} protocols is still at an early stage.
 %
 Some recent stateful fuzzers~\cite{AFLNET@ICST-20,Snipuzz@CCS-21} infer
 protocol states by analyzing the contents of messages (e.g., status codes),
@@ -557,7 +557,7 @@ model learning framework would use this model to produce test inputs, observe th
 %-------------------------------------------------
 We will employ the more efficient model learning algorithms that produce
 richer state machines of protocol implementations to enhance the effectiveness
-and error detection capabilities of fuzzing techniques.
+and error detection capabilities of stateful fuzzing techniques.
 
 \task{Protocol State Fuzzing \& Automatic Detection of State Machine Errors}
 %---------------------------------------------------------------------------
@@ -567,30 +567,35 @@ mentioned in~\cref{sec:SOTA}, to learn realistic SUTs of network protocols,
 the learning setup needs to be extended with an appropriate \emph{mapper}.
 For complex network protocols, there exists a natural trade-off between the
 level of detail in the abstraction that the mapper provides (\eg which and how
-many guard predicates it can express, how coarse- or fine-grained is the data
-domain, etc.) and the amount of additional information that the richer state
-machine models which are learned contain.  To make protocol state fuzzing
-based on EFSMs scalable and effective, and avoid using unnecessarily
-approximate state machine models, we need to develop a general method that
-strikes the right balance in this trade-off.
+many guard predicates it can express, how coarse- or fine-grained the data
+domain is, etc.) and the amount of additional information that the richer
+state machine models which are learned contain.  To make protocol state
+fuzzing based on EFSMs scalable and effective,
+% and avoid using unnecessarily approximate state machine models,
+we need to develop a general method that strikes the right balance in this
+trade-off.
 %
-It is also quite likely that this trade-off turns out to be protocol-specific;
-\ie that it may need to take into account some information about the
-characteristics of the protocol (\eg how many messages the protocol contains,
-how many parameters its messages have, how big are the domains of these
-parameters, etc.)
+It is also likely that this trade-off needs to be inherently
+protocol-specific.  I.e., that the method that we will develop may need to
+take into account information about the characteristics of the protocol (\eg
+how many messages it contains, how many parameters its messages have, how big
+the domains of these parameters are, etc.)
 
-For maintaining full automation in the detection of state machine errors, of
+For maintaining the full automation in the detection of state machine errors
+that we managed to achieve for state machine models with a simple alphabet, of
 equal importance is to extend the automata-based algorithm of our recent
 NDSS'2023 paper~\cite{AutomataBased@NDSS-23} to work with EFSMs instead of
-plain FSMs.  A technical complication is that the technique uses intersection
-of FSMs (\ie intersection of regular languages) as its core ingredient, for
-which efficient algorithms are known. For EFSMs, whose alphabets include
-(arbitrary) predicates as well as ``plain'' symbols, it is unclear whether
-suitable such intersection algorithms exist, let alone efficient ones.
-Maintaining automation may involve translation of EFSMs to some appropriate
-language and use of SMT solvers to generate sequences of messages that expose
-some state machine bug and validate it in the actual SUT.
+plain FSMs.  A technical complication is that the technique converts the
+learned protocol state machine, which is in the form of a Mealy machine, to a
+deterministic finite automaton (DFA) and then uses intersection of DFAs (\ie
+intersection of regular languages) as its core ingredient.
+% for which efficient algorithms are known.
+For richer models, such as EFSMs, whose alphabets also include (arbitrary)
+predicates as well as ``plain'' symbols, it is unclear whether suitable such
+intersection algorithms exist, let alone efficient ones.  Maintaining
+automation may involve translation of the information in EFSMs to some
+appropriate language, and use SMT solvers to generate sequences of messages
+that expose some state machine bug and validate it in the actual SUT.
 
 % \significance{}
 
@@ -600,7 +605,45 @@ some state machine bug and validate it in the actual SUT.
 
 \subsection{Practice}
 %--------------------
-\task{Tools \& Case Studies} \FIX{Kostis writes}
+The third dimension of our work has a more practical flavor, namely to
+implement our techniques in tools, apply them in case studies, and developing
+an appropriate methodology for their use by protocol implementors. We describe
+all these below.
+
+\task{Software Tools \& Case Studies}
+%------------------------------------
+The main PI has a long history of leading the development of software tools
+that are not just prototypes, but instead attract a significant number of
+users (cf.\ also~\cref{sec:collaboration}).
+%
+As mentioned in~\cref{sec:prelim}, we have recently released
+\system{DTLS-Fuzzer}, a protocol state fuzzer for DTLS servers and clients.
+One direction we will pursue as part of working in this project is to make a
+more generic, procotol agnostic protocol state fuzzer, which can be
+instantiated with appropriate protocol-specific components by its user.  We
+intend to package this tool with components about the main protocols (\eg SSH,
+DTLS, QUIQ,~$\ldots$) that we will apply our techniques on, and design a
+general interface for its users to write ---and possibly even contribute to
+the tool's community--- analogous components for the network protocols of
+their interest.
+
+In a similar spirit, we will package the model learning algorithms that we
+will develop either into a new stand-alone library or incorporate them
+directly into \system{RALib}~\cite{CasselHJS16}.
+%
+Last but not least, we will implement a stateful coverage-driven grey-box
+fuzzer either as a new tool or by extending one of the community efforts to
+create a general fuzzer (\eg \system{AFL++}~\cite{AFL++@Woot-20}) that
+incorporates techniques published in the literature.
+
+We will evaluate all our techniques and tools on widely-used protocol
+implementations, both in order to measure their effectiveness and scalability
+(or discover bottlenecks that they may have), but also in order to detect bugs
+and security vulnerabilities in them and hopefully make them more robust and
+more secure. Of particular interest to use as case studies are implementations
+of newly proposed and more lightweight network protocols (such as \eg
+EDHOC~\cite{ietf-lake-edhoc-18}), which are put forward as more tailored to
+the low energy requirements of IoT systems.
 
 % \significance{}
 
@@ -923,8 +966,8 @@ log design of flush clusters) using such an approach.
 }
 
 
-\section{National and International Collaboration}
-%=================================================
+\section{National and International Collaboration} \label{sec:collaboration}
+%===========================================================================
 Within Sweden, besides a long collaboration with the participating researcher
 (Prof.~Bengt Jonsson), the group of the main applicant collaborates with
 research groups within the IT department of Uppsala University, most notably
