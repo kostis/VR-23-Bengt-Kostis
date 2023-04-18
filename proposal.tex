@@ -237,8 +237,9 @@ learning algorithm but needed for supplying message parameters; this can include
 The most widely known algorithm for model learning of finite automata 
 is Angluin's $L^*$~\cite{Angluin1987}.
 % , which has, e.g., been implemented in the LearnLib framework~\cite{IHS2015}.
-A key strengh of model learning is that, by exploiting the Myhill-Nerode theorem, it produce succinct models of
-the externally observable behavior of the SUT.
+A key strength of model learning is that, by exploiting the Myhill-Nerode
+theorem, it produce succinct models of the externally observable behavior of
+the SUT.
 %
 This allows it to extract simple models of complex software, especially if
 we choose the right perspective (e.g., focus on a subset of a component's
@@ -339,7 +340,7 @@ stateful fuzzing techniques are developed.
 %=====================================================================
 \FIX{No text here yet :-(}
 
-\UNREVISED{However, it may be possibe to skip this section if we manage to have short ``Significance'' paragraphs for each of the six tasks in the next section.}
+\UNREVISED{However, it may be possible to skip this section if we manage to have short ``Significance'' paragraphs for each of the six tasks in the next section.}
 }
 
 \mycomment{
@@ -359,7 +360,7 @@ concurrent.
 Concurrent programs are notoriously difficult to get right and test
 effectively. Specific interleaving sequences that occur only rarely can
 trigger unexpected errors and result in crashes that are surprising even to
-expert programmers. Moreover, these bugs are hard to track and cannnot
+expert programmers. Moreover, these bugs are hard to track and cannot
 easily be reproduced; for that reason, they are often referred to as
 \textit{heisenbugs}.  Of course, heisenbugs are not a new problem.  The
 difference today, compared to \eg two decades ago, is that at that time
@@ -471,7 +472,7 @@ literature. We have also applied the fuzzers, over a period of more than three
 years, on the code base of the Contiki-NG Operating System for IoT devices. In
 the process, besides gaining significant experience and expertise in the area
 of fuzzing technology, we have been able to detect and correct a significant
-number of bugs and security vulnerabilies (which have resulted in a total of
+number of bugs and security vulnerabilities (which have resulted in a total of
 eleven CVEs), in Contiki-NG's code base. We have reported our experiences, as
 well as proposed a methodology to evaluate different grey-box fuzzing
 techniques, in a paper~\cite{SoManyFuzzers@ASE-22} that appeared in the 2022
@@ -523,20 +524,21 @@ The extension of $L^*$ to EFSM that we have developed~\cite{CasselHJS16}, called
 for determining how previous inputs may influence future behaviours, which
 requires a number of tests that is \emph{exponential} in the number of data parameters in a
 sequence of input packets.
-We will reduce this number as follows by applying natural optimizations that
+We will reduce this number by applying natural optimizations that
 filter out queries that are not necessary for guaranteeing minimal models.
-    % We are currently reimplementing \system{RALib}~\cite{} to incorporate
-    % this optimization.
+% We are currently reimplementing \system{RALib}~\cite{} to incorporate
+% this optimization.
  We can also optimize further by relaxing the guarantee to generate minimal models.
 Then we are free to apply a carefully selected set of input sequences within a given budget, and thereafter find a combination of guards and assignments that agree with the observed test results. This line will use techniques from programming-by-example, which has been successfully used in other contexts~\cite{GulwaniPS17}. Recent work on the Prognosis tool~\cite{Prognosis@SIGCOMM-21} exhibits an \emph{ad hoc} use of this idea.
 
 Another strategy for reducing the test effort needed for model generation is to move away from
 the black-box setting and instead apply grey-box or even symbolic white-box techniques. Such techniques allow to
 observe directly how data values in previous inputs influence future behaviors. Grey-box and white-box techniques offer
-different tradeoffs between the number tests that can be applied within a given time budget, and the level of information that
-can be obtained: Greybox-techniques can directly correlate changes in input to change in control flow, whereas white-box
-directly reveals which values are stored and which predicates are tested in a trace.
-We will investigate the optimal balance in this tradeoff.
+different trade-offs between the number tests that can be applied within a given time budget, and the level of information that
+can be obtained.
+Greybox-techniques can directly correlate changes in input to change in
+control flow, whereas white-box directly reveals which values are stored and which predicates are tested in a trace.
+We will investigate the optimal balance in this trade-off.
 The goal here is to develop a principled way to integrate symbolic execution and/or coverage feedback into model learning algorithms.
 The resulting technique could replace membership queries (is word $w$ in the language?) by a white- or grey-box
 version in which the reply includes the symbolic output (white-box) and/or only coverage information (grey-box) induced by a
@@ -616,7 +618,7 @@ To further increase their effectiveness, we also intend to design appropriate
 mutation strategies that take packet structure into account, and leverage
 protocol-specific characteristics for narrowing the input space and improving
 the effectiveness of triggering bugs and security vulnerabilities for the
-protocol whose SUT is being fuzzed. Similar ideas have recently been expored
+protocol whose SUT is being fuzzed. Similar ideas have recently been explored
 in some directed~\cite{SweynTooth@ATC-20,Braktooth@USENIX-22} and
 mutation-based fuzzers~\cite{Frankenstein@USENIX-20} which are targeting the
 Bluetooth protocol.
@@ -628,7 +630,7 @@ exist. In stateless fuzzers this is typically done by calculating the distance
 using the information in the Control-Flow Graph (CFG) of the program. In
 stateful SUTs, CFG distance does not accurately reflect state distance, making
 the distance-guided directed testing ineffective. Therefore, it is an
-interesting direction to design state-aware distrance metrics to guide
+interesting direction to design state-aware distance metrics to guide
 directed fuzzers of security protocol implementations.
 
 % \significance{}
@@ -649,7 +651,7 @@ users (cf.\ also~\cref{sec:collaboration}).
 As mentioned in~\cref{sec:prelim}, we have recently released
 \system{DTLS-Fuzzer}, a protocol state fuzzer for DTLS servers and clients.
 One direction we will pursue as part of working in this project is to make a
-more generic, procotol agnostic protocol state fuzzer, which can be
+more generic, protocol agnostic protocol state fuzzer, which can be
 instantiated with appropriate protocol-specific components by its user.  We
 intend to package this tool with components about the main protocols (\eg SSH,
 DTLS, QUIQ,~$\ldots$) that we will apply our techniques on, and design a
@@ -1121,7 +1123,7 @@ Security Network for PhD students), organized in 29--30th of May 2023 in
 Uppsala at the premises of the IT Department.
 
 Last but not least, both PIs of this project regularly supervise MSc theses in
-the area of cybersecurity and software correctness, and incorporate aspects of
+the area of Cybersecurity and software correctness, and incorporate aspects of
 their research and the tools that their groups have produced in undergraduate
 and graduate courses that they are involved.  Occasionally, we are fortunate
 enough to excite students to the point that they become contributors to the
