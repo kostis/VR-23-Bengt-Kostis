@@ -561,9 +561,9 @@ and error detection capabilities of stateful fuzzing techniques.
 
 \task{Protocol State Fuzzing \& Automatic Detection of State Machine Errors}
 %---------------------------------------------------------------------------
-Unfortunately, employing more advanced model learning algorithms for protocol
-state fuzzing purposes is not straightforward.  The main reason is that, as
-mentioned in~\cref{sec:SOTA}, to learn realistic SUTs of network protocols,
+To effectively use more advanced model learning algorithms for protocol
+state fuzzing purposes, it is important to make appropriate choices for key design parameters.
+The background is that, as mentioned in~\cref{sec:SOTA}, to learn realistic SUTs of network protocols,
 the learning setup needs to be extended with an appropriate \emph{mapper}.
 For complex network protocols, there exists a natural trade-off between the
 level of detail in the abstraction that the mapper provides (\eg which and how
@@ -588,7 +588,8 @@ NDSS'2023 paper~\cite{AutomataBased@NDSS-23} to work with EFSMs instead of
 plain FSMs.  A technical complication is that the technique converts the
 learned protocol state machine, which is in the form of a Mealy machine, to a
 deterministic finite automaton (DFA) and then uses intersection of DFAs (\ie
-intersection of regular languages) as its core ingredient.
+intersection of regular languages) as its core ingredient. This type of operation is
+standardly used in model checking~\cite{MC:handbook}.
 % for which efficient algorithms are known.
 For richer models, such as EFSMs, whose alphabets also include (arbitrary)
 predicates as well as ``plain'' symbols, it is unclear whether suitable such
