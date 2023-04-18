@@ -330,8 +330,8 @@ employing \emph{heuristics} (namely, taking snapshots of long-lived memory
 areas and applying fuzzy hashing) to recover state information.
 %
 For achieving success which is similar to the one that coverage-driven fuzzers
-for stateless programs often achieve, we believe that more sophisticated
-stateful fuzzing techniques need to be developed.
+for stateless programs often achieve, it is crucial that more sophisticated
+stateful fuzzing techniques are developed.
 
 
 \mycomment{
@@ -587,15 +587,15 @@ NDSS'2023 paper~\cite{AutomataBased@NDSS-23} to work with EFSMs instead of
 plain FSMs.  A technical complication is that the technique converts the
 learned protocol state machine, which is in the form of a Mealy machine, to a
 deterministic finite automaton (DFA) and then uses intersection of DFAs (\ie
-intersection of regular languages) as its core ingredient. This type of operation is
-standardly used in model checking~\cite{MC:handbook}.
+intersection of regular languages) as its core ingredient. This type of
+operation is standardly used in model checking~\cite{MC:handbook}.
 % for which efficient algorithms are known.
 For richer models, such as EFSMs, whose alphabets also include (arbitrary)
 predicates as well as ``plain'' symbols, it is unclear whether suitable such
 intersection algorithms exist, let alone efficient ones. Maintaining
 automation may involve translation of the information in EFSMs to some
-appropriate language, use SMT solvers to generate sequences of messages that
-expose some state machine bug, and validate this sequence in the actual SUT.
+appropriate language, use SMT solvers to generate message sequences that
+expose some state machine bug, and validate this sequence in the SUT.
 
 % \significance{}
 
@@ -604,28 +604,39 @@ expose some state machine bug, and validate this sequence in the actual SUT.
 As mentioned in~\cref{sec:SOTA}, currently very few stateful coverage-based
 grey-box fuzzers exist (\eg~\cite{AFLNET@ICST-20,StateAFL@ESE-22}). Moreover,
 all of them use very crude approximations and/or heuristics to discover,
-during fuzzing, the stateful behaviour of the SUTs they analyze, and start the
-fuzzing process from each of these states. We have good reasons to believe
-that we can construct significantly more effective coverage-based grey-box
-fuzzers for security protocol implementations by supplying them,
-ahead-of-fuzzing, with fine-grained information about the state machine of the
+during fuzzing, interesting states of the SUTs they analyze. They then
+start the fuzzing process from each of these states. We have good reasons to
+believe that we can construct significantly more effective coverage-based
+grey-box fuzzers for security protocol implementations by supplying them,
+ahead of time, with fine-grained information about the state machine of the
 SUT, which we will of course automatically learn using the algorithms
 of~\cref{sec:algorithms}.
 
-In addition, we intend to design appropriate mutation strategies that take
-packet structure into account, and leverage protocol-specific characteristics
-for narrowing the input space and improving the effectiveness of triggering
-bugs and security vulnerabilities for the protocol whose SUT is being fuzzed.
-A similar idea has recently been expored in some directed and mutation-based
-fuzzers~\cite{Frankenstein@USENIX-20,SweynTooth@ATC-20,Braktooth@USENIX-22}
-which are targeting the Bluetooth protocol.
+To further increase their effectiveness, we also intend to design appropriate
+mutation strategies that take packet structure into account, and leverage
+protocol-specific characteristics for narrowing the input space and improving
+the effectiveness of triggering bugs and security vulnerabilities for the
+protocol whose SUT is being fuzzed. Similar ideas have recently been expored
+in some directed~\cite{SweynTooth@ATC-20,Braktooth@USENIX-22} and
+mutation-based fuzzers~\cite{Frankenstein@USENIX-20} which are targeting the
+Bluetooth protocol.
+
+Finally, another idea we intend to explore is to develop techniques for
+\emph{state-aware directed fuzzing}. Directed fuzzing focuses on testing,
+via appropriate seed selection, specific code locations where bugs are likely to
+exist. In stateless fuzzers this is typically done by calculating the distance
+using the information in the Control-Flow Graph (CFG) of the program. In
+stateful SUTs, CFG distance does not accurately reflect state distance, making
+the distance-guided directed testing ineffective. Therefore, it is an
+interesting direction to design state-aware distrance metrics to guide
+directed fuzzers of security protocol implementations.
 
 % \significance{}
 
 \subsection{Practice}
 %--------------------
 To maximize the impact of our work, we will implement our techniques in
-publicly available tools, apply them in case studies. We will also develop
+publicly available tools, and apply them in case studies. We will also develop
 appropriate methodologies for their use by protocol implementors. We describe
 all these below.
 
