@@ -27,6 +27,7 @@
 \newcommand{\FIX}[1]{\textcolor{red}{\textbf{#1}}}
 \newcommand{\UNREVISED}[1]{\textcolor{DarkGrey}{#1}}
 \newcommand{\system}[1]{\mbox{\textsf{#1}}}
+\newcommand{\bjcom}[1]{\textcolor{green}{\textbf{#1}}}
 
 \newcounter{Task}
 \newcommand{\task}[1]{\addtocounter{Task}{1}\paragraph{Task \theTask: #1}}
@@ -47,6 +48,7 @@
 \newcommand{\eg}{e.\/g.,\ }
 \newcommand{\ie}{i.\/e.,\ }
 \newcommand{\etal}{\textit{et al.}}
+
 
 \begin{document}
 
@@ -133,11 +135,13 @@ the following three dimensions, which we briefly overview below:
 \item[Algorithmic Improvements to Model Learning] A core ingredient for all
   security testing techniques we intend to develop or extend is to discover,
   in a fully automated way, as much information about the state machines of
+\bjcom{I suggest ``stateful behavior''}
   protocol implementations as possible. The technique we will employ for this
   is \emph{model learning}~\cite{Angluin1987,Vaandrager@CACM-17}, and the
   challenge is to develop \emph{scalable} algorithms that learn models which
   are quite rich in information (\eg models whose symbols also contain
   parameters or capture data flow). Currently, no such algorithms exist;
+\bjcom{I suggest: ``automated such algorithms are naive, and do not scale to actual protocol implementations}
   coming up with such model learning algorithms is not only interesting for
   security, but is also applicable to many other areas.
 \item[Effective Stateful Fuzzing Techniques] We will employ the richer
@@ -195,44 +199,46 @@ numerous previously unknown vulnerabilities and bugs~\cite{MessyTLS@CACM-17}.
 Model learning~\cite{Angluin1987,Vaandrager@CACM-17} (also known as
 \emph{active automata learning}) is an automated black-box technique which
 constructs state machine models of software and hardware components from
-information obtained by providing inputs and observing the resulting
-outputs. Model learning has been successfully used in several different
+information obtained by providing test inputs and observing the resulting
+outputs. The construction of models is critically guided by the Myhill-Nerode theorem, a central result
+in automata theory. 
+Model learning has been successfully used in several different
 application domains, including learning interfaces of classes in software
-libraries~\cite{HowarISBJ12}, and finding bugs and vulnerabilities in
+libraries~\cite{ACMN:interfaces}, and finding bugs and vulnerabilities in
 implementations of security-critical protocols
-(\eg~\cite{AJUV15,CPPR14,dRP15,FJV2016,SSH@SPIN-17,DTLS@USENIX-20}).
+(\eg~\cite{AJUV15,ruiter2015,FJV2016,SSH@SPIN-17,DTLS@USENIX-20}).
 
-When applied to network protocols,
-model learning algorithms operate in two alternating phases: hypothesis construction and hypothesis validation.
-During hypothesis construction, selected sequences of input symbols are sent to the SUT, observing which
-sequences of output symbols are generated in response.
-When certain convergence criteria are met, the 
-learning algorithm constructs a \emph{hypothesis}, which is a minimal state machine that is consistent with
-the observations recorded so far, and
-moves to the validation phase, in which the SUT is subject to a conformance testing algorithm which aims to validate that
-the behavior of the SUT agrees with the hypothesis.
-%% thoroughly test for input sequences for which the hypothesis mispredicts the response by the SUT.
-If conformance testing finds a counterexample, i.e., an input sequence on which the SUT and the hypothesis disagree, the
-hypothesis construction phase is reentered in order
-to build a more refined hypothesis which also takes the discovered
-counterexample into account. If no counterexample is found, learning terminates and returns the current hypothesis.
+%% When applied to network protocols,
+%% model learning algorithms operate in two alternating phases: hypothesis construction and hypothesis validation.
+%% During hypothesis construction, selected sequences of input symbols are sent to the SUT, observing which
+%% sequences of output symbols are generated in response.
+%% When certain convergence criteria are met, the 
+%% learning algorithm constructs a \emph{hypothesis}, which is a minimal state machine that is consistent with
+%% the observations recorded so far, and
+%% moves to the validation phase, in which the SUT is subject to a conformance testing algorithm which aims to validate that
+%% the behavior of the SUT agrees with the hypothesis.
+%% %% thoroughly test for input sequences for which the hypothesis mispredicts the response by the SUT.
+%% If conformance testing finds a counterexample, i.e., an input sequence on which the SUT and the hypothesis disagree, the
+%% hypothesis construction phase is reentered in order
+%% to build a more refined hypothesis which also takes the discovered
+%% counterexample into account. If no counterexample is found, learning terminates and returns the current hypothesis.
 
-Model learning algorithms work in practice with finite input alphabets of modest sizes. In order to learn realistic SUTs, for which the alphabet of packets can be huge, the learning setup is extended with
+Model learning algorithms work in practice with finite input alphabets of modest sizes. In order to learn realistic SUTs, for which the alphabet of packets can be huge, the learning setup is typically extended with
 a so-called \emph{mapper}, which
 % acts as a test harness that
 transforms input symbols from the finite alphabet known to the learning algorithm to actual protocol
-messages sent to the SUT.
+messages sent to the SUT~\cite{AJUV15}.
 Typically, the input alphabet consists of different types of messages, often
 refined to represent interesting variations, e.g., concerning the key exchange algorithm.
-The mapper transforms each such message to a SUT message by
-supplying message parameters, performing cryptographic operations, etc.
+%% The mapper transforms each such message to a SUT message by
+%% supplying message parameters, performing cryptographic operations, etc.
 The mapper also maintains state that is hidden from the
 learning algorithm but needed for supplying message parameters; this can include sequence numbers, agreed encryption keys, etc.
 
 The most widely known algorithm for model learning of finite automata 
 is Angluin's $L^*$~\cite{Angluin1987}.
 % , which has, e.g., been implemented in the LearnLib framework~\cite{IHS2015}.
-A key strengh of model learning is that it aims to produce succinct models of
+A key strengh of model learning is that, by exploiting the Myhill-Nerode theorem, it produce succinct models of
 the externally observable behavior of the SUT.
 %
 This allows it to extract simple models of complex software, especially if
